@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users{% endblock %}
+
+{% block content %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+    }
+    
+    .stat-card h3 {
+        font-size: 2rem;
+        margin-bottom: 5px;
+    }
+    
+    .user-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 30px;
+    }
+    
+    .user-table th, .user-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .user-table th {
+        background: #667eea;
+        color: white;
+    }
+    
+    .btn-delete {
+        background: #dc3545;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-size: 0.85rem;
+    }
+    
+    .btn-delete:hover {
+        background: #c82333;
+    }
+    
+    .section-title {
+        color: #667eea;
+        margin: 30px 0 20px;
+    }
+</style>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>{{ educators|length }}</h3>
+        <p>Educators</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ parents|length }}</h3>
+        <p>Parents</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ learners|length }}</h3>
+        <p>Learners</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ educators|length + parents|length + learners|length }}</h3>
+        <p>Total Users</p>
+    </div>
+</div>
+
+<h3 class="section-title">Educators</h3>
+<table class="user-table">
+    <thead>
+        <tr><th>Name</th><th>Email</th><th>Phone</th><th>Teaching Grade</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+        {% for educator in educators %}
+        <tr>
+            <td>{{ educator.user.name }}</td>
+            <td>{{ educator.user.email }}</td>
+            <td>{{ educator.phone_number }}</td>
+            <td>Grade {{ educator.grade_teaching }}</td>
+            <td><a href="{{ url_for('admin_delete_user', user_id=educator.user.id) }}" class="btn-delete" onclick="return confirm('Delete this user?')">Delete</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3 class="section-title">Parents</h3>
+<table class="user-table">
+    <thead><tr><th>Name</th><th>Email</th><th>ID Number</th><th>Actions</th></tr></thead>
+    <tbody>
+        {% for parent in parents %}
+        <tr>
+            <td>{{ parent.user.name }}</td>
+            <td>{{ parent.user.email }}</td>
+            <td>{{ parent.id_number }}</td>
+            <td><a href="{{ url_for('admin_delete_user', user_id=parent.user.id) }}" class="btn-delete" onclick="return confirm('Delete this user?')">Delete</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3 class="section-title">Learners</h3>
+<table class="user-table">
+    <thead><tr><th>Name</th><th>ID Number</th><th>Age</th><th>Grade</th><th>Parent</th><th>Actions</th></tr></thead>
+    <tbody>
+        {% for learner in learners %}
+        <tr>
+            <td>{{ learner.user.name }}</td>
+            <td>{{ learner.id_number }}</td>
+            <td>{{ learner.age }}</td>
+            <td>Grade {{ learner.grade }}</td>
+            <td>{{ learner.parent.user.name }}</td>
+            <td><a href="{{ url_for('admin_delete_user', user_id=learner.user.id) }}" class="btn-delete" onclick="return confirm('Delete this user?')">Delete</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div style="text-align: center; margin-top: 30px;">
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+</div>
+{% endblock %}

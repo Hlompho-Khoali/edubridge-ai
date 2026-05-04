@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}All Games{% endblock %}
+
+{% block content %}
+<style>
+    .games-header {
+        margin-bottom: 30px;
+    }
+    
+    .search-box {
+        margin-bottom: 20px;
+        padding: 10px;
+        width: 100%;
+        max-width: 300px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    .games-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 25px;
+    }
+    
+    .game-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .game-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+    
+    .game-category {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 3px 10px;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        margin-bottom: 10px;
+    }
+    
+    .game-title {
+        color: #667eea;
+        margin-bottom: 10px;
+        font-size: 1.2rem;
+    }
+    
+    .game-description {
+        color: #666;
+        line-height: 1.5;
+        margin-bottom: 15px;
+    }
+    
+    .game-stats {
+        display: flex;
+        gap: 15px;
+        margin: 15px 0;
+        font-size: 0.85rem;
+        color: #666;
+    }
+    
+    .btn-view {
+        background: #667eea;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 5px;
+        text-decoration: none;
+        display: inline-block;
+        transition: background 0.2s;
+    }
+    
+    .btn-view:hover {
+        background: #5a67d8;
+    }
+    
+    .filter-buttons {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .filter-btn {
+        background: #f0f0f0;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .filter-btn.active {
+        background: #667eea;
+        color: white;
+    }
+</style>
+
+<div class="games-header">
+    <h2>Learning Games Library</h2>
+    <p>Explore all available educational games designed to enhance cognitive skills</p>
+</div>
+
+<input type="text" id="searchInput" class="search-box" placeholder="Search games...">
+
+<div class="filter-buttons">
+    <button class="filter-btn active" data-category="all">All</button>
+    <button class="filter-btn" data-category="Mathematics">Mathematics</button>
+    <button class="filter-btn" data-category="Memory">Memory</button>
+    <button class="filter-btn" data-category="Pattern Recognition">Pattern Recognition</button>
+    <button class="filter-btn" data-category="Attention">Attention</button>
+</div>
+
+<div class="games-grid" id="gamesGrid">
+    {% for game in games %}
+    <div class="game-card" data-category="{{ game.category }}" data-name="{{ game.name|lower }}">
+        <span class="game-category">{{ game.category }}</span>
+        <h3 class="game-title">{{ game.name }}</h3>
+        <p class="game-description">{{ game.description[:120] }}{% if game.description|length > 120 %}...{% endif %}</p>
+        <div class="game-stats">
+            <span>Questions: 15</span>
+            <span>Points: 30</span>
+            <span>Time: 60 min</span>
+        </div>
+        <a href="{{ url_for('view_game_details', game_id=game.id) }}" class="btn-view">View Details</a>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const gameCards = document.querySelectorAll('.game-card');
+    
+    function filterGames() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const activeCategory = document.querySelector('.filter-btn.active').getAttribute('data-category');
+        
+        gameCards.forEach(card => {
+            const category = card.getAttribute('data-category');
+            const name = card.getAttribute('data-name');
+            
+            const matchesCategory = activeCategory === 'all' || category === activeCategory;
+            const matchesSearch = name.includes(searchTerm);
+            
+            if (matchesCategory && matchesSearch) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+    
+    searchInput.addEventListener('input', filterGames);
+    
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterGames();
+        });
+    });
+</script>
+{% endblock %}

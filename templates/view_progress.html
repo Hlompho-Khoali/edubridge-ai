@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Progress Report{% endblock %}
+
+{% block content %}
+<style>
+    .report-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .chart-container {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+    
+    .trend-up {
+        color: #4caf50;
+    }
+    
+    .trend-down {
+        color: #f44336;
+    }
+    
+    .recommendation {
+        background: #e7f3ff;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 30px;
+    }
+</style>
+
+<div class="report-header">
+    <h2>📊 Learning Progress Report</h2>
+    <p>Student: {{ learner.user.name }} | Grade {{ learner.grade }}</p>
+</div>
+
+<div class="chart-container">
+    <h3>Test Performance Overview</h3>
+    <canvas id="performanceChart" width="400" height="200"></canvas>
+</div>
+
+<div class="details-grid">
+    <div class="detail-card">
+        <h4>📚 Total Tests Taken</h4>
+        <p>{{ results|length }}</p>
+    </div>
+    <div class="detail-card">
+        <h4>✅ Tests Passed</h4>
+        <p>{{ results|selectattr('passed', 'equalto', true)|list|length }}</p>
+    </div>
+    <div class="detail-card">
+        <h4>📈 Average Score</h4>
+        <p>{{ "%.1f"|format(results|map(attribute='percentage')|sum / results|length) if results else 0 }}%</p>
+    </div>
+</div>
+
+<div class="recommendation">
+    <h4>💡 Personalized Recommendations</h4>
+    <ul>
+        {% for result in results if not result.passed %}
+        <li>Review {{ result.assignment.game.name }} - Focus on areas where you made mistakes</li>
+        {% endfor %}
+        {% if results|selectattr('passed', 'equalto', true)|list|length == results|length %}
+        <li>Excellent work! You're doing great. Keep up the momentum!</li>
+        {% endif %}
+    </ul>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    const testNames = {{ results|map(attribute='assignment.game.name')|list|tojson }};
+    const percentages = {{ results|map(attribute='percentage')|list|tojson }};
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: testNames,
+            datasets: [{
+                label: 'Score Percentage',
+                data: percentages,
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Percentage (%)'
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}v

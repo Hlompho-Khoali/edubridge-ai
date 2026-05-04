@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}{{ game.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .game-detail-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .game-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .info-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+    }
+    
+    .info-card h4 {
+        color: #667eea;
+        margin-bottom: 10px;
+    }
+    
+    .info-card .value {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    
+    .questions-list {
+        margin-top: 30px;
+    }
+    
+    .question-preview {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    
+    .question-text-preview {
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .options-preview {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    
+    .option-badge {
+        background: white;
+        padding: 5px 12px;
+        border-radius: 20px;
+        border: 1px solid #ddd;
+        font-size: 0.9rem;
+    }
+    
+    .correct-answer {
+        margin-top: 10px;
+        color: #4caf50;
+        font-size: 0.9rem;
+    }
+    
+    .btn-back {
+        margin-top: 30px;
+        text-align: center;
+    }
+</style>
+
+<div class="game-detail-header">
+    <h2>{{ game.name }}</h2>
+    <p>{{ game.description }}</p>
+    <span style="background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; display: inline-block; margin-top: 10px;">
+        Category: {{ game.category }}
+    </span>
+</div>
+
+<div class="game-info">
+    <div class="info-card">
+        <h4>Total Questions</h4>
+        <div class="value">{{ questions|length }}</div>
+    </div>
+    <div class="info-card">
+        <h4>Total Points</h4>
+        <div class="value">{{ questions|length * 2 }}</div>
+    </div>
+    <div class="info-card">
+        <h4>Passing Score</h4>
+        <div class="value">{{ game.passing_score }} / {{ questions|length * 2 }}</div>
+    </div>
+    <div class="info-card">
+        <h4>Time Limit</h4>
+        <div class="value">{{ game.time_limit_minutes }} minutes</div>
+    </div>
+</div>
+
+<div class="game-info">
+    <div class="info-card">
+        <h4>How to Play</h4>
+        <p>Select the correct answer for each question. Each question is worth 2 points. You need 50% or more to pass the test.</p>
+    </div>
+</div>
+
+<h3>Sample Questions (First 5)</h3>
+<div class="questions-list">
+    {% for question in questions[:5] %}
+    <div class="question-preview">
+        <div class="question-text-preview">Question {{ loop.index }}: {{ question.question }}</div>
+        <div class="options-preview">
+            {% for option in question.options %}
+            <span class="option-badge">{{ option }}</span>
+            {% endfor %}
+        </div>
+        <div class="correct-answer">Correct answer: {{ question.correct }}</div>
+        <div>Points: {{ question.points }}</div>
+    </div>
+    {% endfor %}
+    
+    {% if questions|length > 5 %}
+    <p style="text-align: center; margin-top: 10px;">... and {{ questions|length - 5 }} more questions</p>
+    {% endif %}
+</div>
+
+<div class="btn-back">
+    <a href="javascript:history.back()" class="btn btn-secondary">Back</a>
+    <a href="{{ url_for('view_all_games') }}" class="btn btn-primary">View All Games</a>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Register Learner{% endblock %}
+
+{% block content %}
+<style>
+    .register-container {
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 1rem;
+    }
+    
+    .btn-register {
+        width: 100%;
+        padding: 12px;
+        font-size: 1.1rem;
+    }
+    
+    .info-box {
+        background: #e7f3ff;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+    }
+    
+    .warning-box {
+        background: #fff3cd;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+        border-left: 4px solid #ffc107;
+    }
+    
+    .help-text {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 5px;
+    }
+</style>
+
+<div class="register-container">
+    <h2 style="text-align: center; color: #667eea; margin-bottom: 30px;">Register as Learner</h2>
+    
+    <div class="warning-box">
+        Important: You will need your parent's ID number to register.
+        Your South African ID number (13 digits) will be used to determine your age and grade.
+        Learners must be between 6 and 12 years old.
+    </div>
+    
+    <div class="info-box">
+        Your South African ID number (13 digits) contains your date of birth.
+        The system will automatically calculate your age and assign you to the appropriate grade.
+    </div>
+    
+    <form method="POST">
+        <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" required placeholder="Enter your full name">
+        </div>
+        
+        <div class="form-group">
+            <label for="id_number">South African ID Number (13 digits)</label>
+            <input type="text" id="id_number" name="id_number" required placeholder="Enter your 13-digit ID number" maxlength="13" pattern="[0-9]{13}">
+            <div class="help-text">Example: 0501011234089 (YYMMDD followed by 7 digits)</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="parent_id">Parent's ID Number</label>
+            <input type="text" id="parent_id" name="parent_id" required placeholder="Enter your parent's ID number">
+            <div class="help-text">Ask your parent for their registered ID number</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Create Password</label>
+            <input type="password" id="password" name="password" required placeholder="Create a password">
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-register">Register</button>
+    </form>
+    
+    <p style="text-align: center; margin-top: 20px;">
+        Already have an account? <a href="{{ url_for('login') }}" style="color: #667eea;">Login here</a>
+    </p>
+</div>
+{% endblock %}

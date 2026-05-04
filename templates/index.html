@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<style>
+    .hero {
+        text-align: center;
+        padding: 40px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        color: white;
+        margin-bottom: 40px;
+    }
+    
+    .hero h1 {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+    }
+    
+    .roles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 25px;
+        margin: 40px 0;
+    }
+    
+    .role-card {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 15px;
+        padding: 30px;
+        text-align: center;
+        transition: transform 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
+        color: #333;
+        display: block;
+    }
+    
+    .role-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .role-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+    }
+    
+    .role-card h3 {
+        color: #667eea;
+        margin-bottom: 10px;
+    }
+    
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 25px;
+        margin-top: 30px;
+    }
+    
+    .feature {
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+    
+    .stats-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 30px;
+        margin-top: 40px;
+        color: white;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .stat-item h4 {
+        font-size: 2rem;
+        margin-bottom: 5px;
+    }
+    
+    .btn-large {
+        padding: 15px 40px;
+        font-size: 1.1rem;
+        margin: 10px;
+    }
+</style>
+
+<div class="hero">
+    <h1>🎓 Welcome to EduBridge</h1>
+    <p>Bridging Learning Gaps with Intelligent Support</p>
+    <p style="margin-top: 20px;">Your comprehensive platform for game-based learning, ADHD screening, and educational assessments</p>
+</div>
+
+<h2 style="text-align: center; color: #667eea;">Select Your Role to Get Started</h2>
+<div class="roles-grid">
+    <a href="{{ url_for('login') }}" class="role-card">
+        <div class="role-icon"></div>
+        <h3>Learner</h3>
+        <p>Play educational games, take assessments, and track your progress</p>
+    </a>
+    <a href="{{ url_for('login') }}" class="role-card">
+        <div class="role-icon"></div>
+        <h3>Parent</h3>
+        <p>Monitor your child's learning journey and view reports</p>
+    </a>
+    <a href="{{ url_for('login') }}" class="role-card">
+        <div class="role-icon"></div>
+        <h3>Educator</h3>
+        <p>Assign games, track student progress, and generate insights</p>
+    </a>
+    <a href="{{ url_for('login') }}" class="role-card">
+        <div class="role-icon"></div>
+        <h3>Admin</h3>
+        <p>Manage the platform and oversee all activities</p>
+    </a>
+</div>
+
+<div class="features-grid">
+    <div class="feature">
+        <div class="feature-icon"></div>
+        <h4>29 Educational Games</h4>
+        <p>Interactive games targeting cognitive skills and ADHD screening</p>
+    </div>
+    <div class="feature">
+        <div class="feature-icon"></div>
+        <h4>Real-time Analytics</h4>
+        <p>Track progress, generate reports</p>
+    </div>
+    <div class="feature">
+        <div class="feature-icon"></div>
+        <h4>Assessments</h4>
+        <p>Comprehensive assessments with instant scoring and feedback</p>
+    </div>
+   
+</div>
+
+<div class="stats-section">
+    <div class="stats-grid">
+        <div class="stat-item">
+            <h4>29</h4>
+            <p>Educational Games</p>
+        </div>
+        <div class="stat-item">
+            <h4>3</h4>
+            <p>Grade Levels</p>
+        </div>
+        <div class="stat-item">
+            <h4>50%</h4>
+            <p>Passing Score</p>
+        </div>
+        <div class="stat-item">
+            <h4>60</h4>
+            <p>Minutes per Test</p>
+        </div>
+    </div>
+</div>
+
+<div style="text-align: center; margin-top: 40px;">
+    <p>Don't have an account?</p>
+    <a href="{{ url_for('register_educator') }}" class="btn btn-primary btn-large">Register as Educator</a>
+    <a href="{{ url_for('register_parent') }}" class="btn btn-primary btn-large">Register as Parent</a>
+    <a href="{{ url_for('register_learner') }}" class="btn btn-primary btn-large">Register as Learner</a>
+</div>
+{% endblock %}

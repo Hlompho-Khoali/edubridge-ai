@@ -1,0 +1,40 @@
+<!-- This is used as a modal for quick assignment -->
+<div id="assignTestModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="background: white; max-width: 500px; margin: 100px auto; padding: 30px; border-radius: 10px;">
+        <h3>Assign Test to Student</h3>
+        <form method="POST" action="{{ url_for('assign_test') }}">
+            <div class="form-group">
+                <label for="learner_id">Select Student:</label>
+                <select name="learner_id" id="learner_id" required>
+                    <option value="">Choose a student</option>
+                    {% for learner in learners %}
+                    <option value="{{ learner.id }}">{{ learner.user.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="game_id">Select Test:</label>
+                <select name="game_id" id="game_id" required>
+                    <option value="">Choose a test</option>
+                    {% for game in games %}
+                    <option value="{{ game.id }}">{{ game.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-primary">Assign</button>
+                <button type="button" onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal() {
+        document.getElementById('assignTestModal').style.display = 'block';
+    }
+    
+    function closeModal() {
+        document.getElementById('assignTestModal').style.display = 'none';
+    }
+</script>
