@@ -14,10 +14,19 @@ load_dotenv()
 # Create Flask app
 app = Flask(__name__)
 
-# Configuration
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///database.db')
+# Database configuration for PostgreSQL on Render
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # Fix for PostgreSQL URL (Render uses postgres:// not postgresql://)
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['SESSION_COOKIE_SECURE'] = os.environ.get('RENDER', 'false').lower() == 'true'
 app.config['REMEMBER_COOKIE_SECURE'] = os.environ.get('RENDER', 'false').lower() == 'true'
 
@@ -29,7 +38,7 @@ login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 # Custom Jinja2 filter
 @app.template_filter('fromjson')
@@ -41,53 +50,49 @@ def from_json_filter(value):
             return []
     return []
 
-# ==================== INITIALIZATION FUNCTION ====================
-
-def init_db():
-    """Initialize database with admin user and games"""
-    with app.app_context():
-        # Create tables
-        db.create_all()
+# Initialize database with app context
+with app.app_context():
+    db.create_all()
+    print("Database tables created/verified")
+    
+    # Create super admin if not exists
+    admin_user = User.query.filter_by(email='admin@edubridge.com').first()
+    if not admin_user:
+        admin_user = User(
+            email='admin@edubridge.com',
+            name='Super Admin',
+            role='admin'
+        )
+        admin_user.set_password('admin123')
+        db.session.add(admin_user)
+        db.session.flush()
         
-        # Create super admin if not exists
-        admin_user = User.query.filter_by(email='admin@edubridge.com').first()
-        if not admin_user:
-            admin_user = User(
-                email='admin@edubridge.com',
-                name='Super Admin',
-                role='admin'
-            )
-            admin_user.set_password('admin123')
-            db.session.add(admin_user)
-            db.session.flush()
-            
-            # Create admin profile
-            admin_profile = Admin(
-                user_id=admin_user.id,
-                employee_id='ADMIN001',
-                department='System Administration'
-            )
-            db.session.add(admin_profile)
-            db.session.commit()
-            print("Super Admin created: admin@edubridge.com / admin123")
-        
-        # Add default games if not exists
-        games_data = get_all_games()
-        for game_data in games_data:
-            game = Game.query.filter_by(name=game_data['name']).first()
-            if not game:
-                game = Game(
-                    name=game_data['name'],
-                    description=game_data['description'],
-                    category=game_data.get('category', 'General'),
-                    questions=json.dumps(game_data['questions']),
-                    passing_score=15,
-                    time_limit_minutes=60
-                )
-                db.session.add(game)
-        
+        admin_profile = Admin(
+            user_id=admin_user.id,
+            employee_id='ADMIN001',
+            department='System Administration'
+        )
+        db.session.add(admin_profile)
         db.session.commit()
-        print(f"Database initialized with {len(games_data)} games")
+        print("Super Admin created: admin@edubridge.com / admin123")
+    
+    # Add default games if not exists
+    games_data = get_all_games()
+    for game_data in games_data:
+        game = Game.query.filter_by(name=game_data['name']).first()
+        if not game:
+            game = Game(
+                name=game_data['name'],
+                description=game_data['description'],
+                category=game_data.get('category', 'General'),
+                questions=json.dumps(game_data['questions']),
+                passing_score=15,
+                time_limit_minutes=60
+            )
+            db.session.add(game)
+    
+    db.session.commit()
+    print(f"Database initialized with {len(games_data)} games")
 
 # ==================== AUTHENTICATION ROUTES ====================
 
@@ -103,12 +108,8 @@ def login():
         password = request.form.get('password')
         role = request.form.get('role')
         
-        user = None
-        
-        # Try to find user by email first
         user = User.query.filter_by(email=email_or_id).first()
         
-        # If not found and role is learner, try to find by learner ID number
         if not user and role == 'learner':
             learner = Learner.query.filter_by(id_number=email_or_id).first()
             if learner:
@@ -202,22 +203,18 @@ def register_learner():
         parent_id_number = request.form.get('parent_id')
         password = request.form.get('password')
         
-        # Validate email
         if not email or '@' not in email:
             flash('Please enter a valid email address', 'error')
             return redirect(url_for('register_learner'))
         
-        # Check if email already exists
         if User.query.filter_by(email=email).first():
-            flash('Email already registered. Please use a different email.', 'error')
+            flash('Email already registered', 'error')
             return redirect(url_for('register_learner'))
         
-        # Validate grade
         if grade not in [1, 2, 3]:
             flash('Please select a valid grade (1-3)', 'error')
             return redirect(url_for('register_learner'))
         
-        # Validate RSA ID
         is_valid, result = validate_rsa_id(id_number)
         if not is_valid:
             flash(result, 'error')
@@ -226,35 +223,25 @@ def register_learner():
         date_of_birth = result
         age = calculate_age(date_of_birth)
         
-        # Validate age (6-12 years old)
         is_valid_age, age_message = validate_learner_age(age)
         if not is_valid_age:
             flash(age_message, 'error')
             return redirect(url_for('register_learner'))
         
-        # Find parent
         parent = Parent.query.filter_by(id_number=parent_id_number).first()
         if not parent:
-            flash('Parent ID number not found. Please check with your parent.', 'error')
+            flash('Parent ID number not found', 'error')
             return redirect(url_for('register_learner'))
         
-        # Check if learner ID already exists
         if Learner.query.filter_by(id_number=id_number).first():
             flash('ID number already registered', 'error')
             return redirect(url_for('register_learner'))
         
-        # Check if learner with this email already exists
-        if Learner.query.filter_by(email=email).first():
-            flash('Email already registered as learner', 'error')
-            return redirect(url_for('register_learner'))
-        
-        # Create user account
         user = User(email=email, name=name, role='learner')
         user.set_password(password)
         db.session.add(user)
         db.session.flush()
         
-        # Create learner profile
         learner = Learner(
             user_id=user.id,
             email=email,
@@ -267,7 +254,7 @@ def register_learner():
         db.session.add(learner)
         db.session.commit()
         
-        flash(f'Registration successful! You are {age} years old and registered for Grade {grade}. You can login with your email: {email}', 'success')
+        flash(f'Registration successful! Age: {age}, Grade: {grade}', 'success')
         return redirect(url_for('login'))
     
     return render_template('register_learner.html')
@@ -382,15 +369,40 @@ def delete_profile():
     role = user.role
     
     if role == 'admin':
-        flash('Admin accounts cannot be deleted through this interface', 'error')
+        flash('Admin accounts cannot be deleted', 'error')
         return redirect(url_for('view_profile'))
     
-    logout_user()
-    db.session.delete(user)
-    db.session.commit()
-    
-    flash('Your account has been deleted successfully', 'success')
-    return redirect(url_for('index'))
+    try:
+        user_id = user.id
+        
+        if role == 'educator':
+            profile = Educator.query.filter_by(user_id=user_id).first()
+            if profile:
+                db.session.delete(profile)
+        elif role == 'parent':
+            profile = Parent.query.filter_by(user_id=user_id).first()
+            if profile:
+                db.session.delete(profile)
+        elif role == 'learner':
+            profile = Learner.query.filter_by(user_id=user_id).first()
+            if profile:
+                db.session.delete(profile)
+        
+        db.session.commit()
+        
+        user_to_delete = User.query.get(user_id)
+        if user_to_delete:
+            db.session.delete(user_to_delete)
+            db.session.commit()
+        
+        logout_user()
+        flash('Your account has been deleted', 'success')
+        return redirect(url_for('index'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred', 'error')
+        return redirect(url_for('view_profile'))
 
 # ==================== ADMIN ROUTES ====================
 
@@ -416,7 +428,6 @@ def admin_dashboard():
         'total_assignments': len(assignments),
         'total_completed': len(results),
         'total_pending': len([a for a in assignments if a.status == 'pending']),
-        'total_in_progress': len([a for a in assignments if a.status == 'in_progress']),
         'avg_score': sum([r.percentage for r in results]) / len(results) if results else 0,
         'pass_rate': len([r for r in results if r.passed]) / len(results) * 100 if results else 0
     }
@@ -464,79 +475,6 @@ def admin_results():
     
     return render_template('admin_results.html', results_data=results_data)
 
-@app.route('/admin/user/edit/<int:user_id>', methods=['GET', 'POST'])
-@login_required
-def admin_edit_user(user_id):
-    if current_user.role != 'admin':
-        return redirect(url_for('login'))
-    
-    user = User.query.get_or_404(user_id)
-    
-    if user.role == 'educator':
-        profile = Educator.query.filter_by(user_id=user.id).first()
-        if request.method == 'POST':
-            user.name = request.form.get('name')
-            user.email = request.form.get('email')
-            user.phone = request.form.get('phone')
-            user.address = request.form.get('address')
-            profile.phone_number = request.form.get('phone_number')
-            profile.grade_teaching = int(request.form.get('grade_teaching'))
-            profile.qualification = request.form.get('qualification')
-            profile.school = request.form.get('school')
-            
-            new_password = request.form.get('new_password')
-            if new_password:
-                user.set_password(new_password)
-            
-            db.session.commit()
-            flash(f'User {user.name} updated successfully!', 'success')
-            return redirect(url_for('admin_users'))
-        
-        return render_template('admin_edit_user.html', user=user, profile=profile)
-    
-    elif user.role == 'parent':
-        profile = Parent.query.filter_by(user_id=user.id).first()
-        if request.method == 'POST':
-            user.name = request.form.get('name')
-            user.email = request.form.get('email')
-            user.phone = request.form.get('phone')
-            user.address = request.form.get('address')
-            profile.occupation = request.form.get('occupation')
-            
-            new_password = request.form.get('new_password')
-            if new_password:
-                user.set_password(new_password)
-            
-            db.session.commit()
-            flash(f'User {user.name} updated successfully!', 'success')
-            return redirect(url_for('admin_users'))
-        
-        return render_template('admin_edit_user.html', user=user, profile=profile)
-    
-    elif user.role == 'learner':
-        profile = Learner.query.filter_by(user_id=user.id).first()
-        if request.method == 'POST':
-            user.name = request.form.get('name')
-            user.email = request.form.get('email')
-            user.phone = request.form.get('phone')
-            user.address = request.form.get('address')
-            profile.grade = int(request.form.get('grade'))
-            profile.school = request.form.get('school')
-            
-            new_password = request.form.get('new_password')
-            if new_password:
-                user.set_password(new_password)
-            
-            db.session.commit()
-            flash(f'User {user.name} updated successfully!', 'success')
-            return redirect(url_for('admin_users'))
-        
-        return render_template('admin_edit_user.html', user=user, profile=profile)
-    
-    else:
-        flash('Cannot edit this user type', 'error')
-        return redirect(url_for('admin_users'))
-
 @app.route('/admin/user/delete/<int:user_id>')
 @login_required
 def admin_delete_user(user_id):
@@ -544,12 +482,50 @@ def admin_delete_user(user_id):
         return redirect(url_for('login'))
     
     user = User.query.get_or_404(user_id)
+    
+    if user.id == current_user.id:
+        flash('You cannot delete your own admin account', 'error')
+        return redirect(url_for('admin_users'))
+    
     if user.role == 'admin':
-        flash('Cannot delete another admin user', 'error')
-    else:
+        flash('Cannot delete other admin users', 'error')
+        return redirect(url_for('admin_users'))
+    
+    try:
+        if user.role == 'learner':
+            learner = Learner.query.filter_by(user_id=user.id).first()
+            if learner:
+                assignments = TestAssignment.query.filter_by(learner_id=learner.id).all()
+                for assignment in assignments:
+                    TestResult.query.filter_by(assignment_id=assignment.id).delete()
+                    db.session.delete(assignment)
+                db.session.delete(learner)
+        elif user.role == 'parent':
+            parent = Parent.query.filter_by(user_id=user.id).first()
+            if parent:
+                learners = Learner.query.filter_by(parent_id=parent.id).all()
+                for learner in learners:
+                    assignments = TestAssignment.query.filter_by(learner_id=learner.id).all()
+                    for assignment in assignments:
+                        TestResult.query.filter_by(assignment_id=assignment.id).delete()
+                        db.session.delete(assignment)
+                    db.session.delete(learner)
+                db.session.delete(parent)
+        elif user.role == 'educator':
+            educator = Educator.query.filter_by(user_id=user.id).first()
+            if educator:
+                assignments = TestAssignment.query.filter_by(educator_id=educator.id).all()
+                for assignment in assignments:
+                    db.session.delete(assignment)
+                db.session.delete(educator)
+        
         db.session.delete(user)
         db.session.commit()
-        flash(f'User {user.name} has been deleted', 'success')
+        flash(f'User {user.name} deleted', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error: {str(e)}', 'error')
     
     return redirect(url_for('admin_users'))
 
@@ -584,7 +560,7 @@ def educator_dashboard():
 @login_required
 def assign_test():
     if current_user.role != 'educator':
-        flash('Unauthorized access', 'error')
+        flash('Unauthorized', 'error')
         return redirect(url_for('login'))
     
     educator = Educator.query.filter_by(user_id=current_user.id).first()
@@ -599,7 +575,7 @@ def assign_test():
     ).first()
     
     if existing:
-        flash('This test is already assigned to this student', 'warning')
+        flash('Test already assigned', 'warning')
     else:
         assignment = TestAssignment(
             game_id=game_id,
@@ -740,7 +716,7 @@ def submit_test(assignment_id):
     db.session.add(result)
     db.session.commit()
     
-    flash(f'Test submitted! You scored {earned_points}/{total_points} ({percentage:.1f}%)', 'success')
+    flash(f'Test submitted! Score: {earned_points}/{total_points} ({percentage:.1f}%)', 'success')
     return redirect(url_for('test_results', result_id=result.id))
 
 @app.route('/test/results/<int:result_id>')
@@ -874,204 +850,68 @@ def view_public_games():
 # ==================== AI ANALYSIS ROUTE ====================
 
 def generate_ai_analysis(test_results, learner):
-    """Generate AI-powered analysis of test results"""
-    
     if not test_results:
         return {
-            'summary': {
-                'total_tests': 0,
-                'average_score': 0,
-                'best_score': 0,
-                'lowest_score': 0,
-                'improving': None
-            },
+            'summary': {'total_tests': 0, 'average_score': 0, 'best_score': 0, 'lowest_score': 0, 'improving': None},
             'category_analysis': {},
             'strengths': [{'message': 'Complete your first test to see your strengths!'}],
             'weaknesses': [],
-            'overall_assessment': "Welcome to EduBridge! Take your first test to get personalized AI analysis of your learning patterns.",
-            'recommendations': [
-                {
-                    'priority': 'High',
-                    'area': 'Getting Started',
-                    'recommendation': 'Complete your first assigned test to begin your learning journey!',
-                    'action': 'Go to your dashboard and start an available test',
-                    'expected_improvement': 'Unlock personalized insights'
-                }
-            ],
-            'motivation': "Ready to start learning? Complete your first test and I'll help you understand your results!",
+            'overall_assessment': "Welcome to EduBridge! Take your first test to get personalized AI analysis.",
+            'recommendations': [{'priority': 'High', 'area': 'Getting Started', 'recommendation': 'Complete your first assigned test', 'action': 'Go to your dashboard', 'expected_improvement': 'Unlock insights'}],
+            'motivation': "Ready to start learning? Complete your first test!",
             'analysis_date': datetime.now().strftime('%Y-%m-%d %H:%M')
         }
     
-    # Skill descriptions
-    skill_descriptions = {
-        'Mathematics': {
-            'name': 'Math & Processing Speed',
-            'description': 'How quickly and accurately you solve math problems',
-            'tips': ['Practice mental math daily', 'Use flashcards for quick recall', 'Play number games']
-        },
-        'Pattern Recognition': {
-            'name': 'Pattern Recognition',
-            'description': 'Ability to identify patterns and sequences',
-            'tips': ['Play pattern matching games', 'Practice completing sequences', 'Look for patterns in everyday life']
-        },
-        'Memory': {
-            'name': 'Working Memory',
-            'description': 'Ability to hold and use information temporarily',
-            'tips': ['Play memory matching games', 'Practice recalling sequences', 'Use visualization techniques']
-        },
-        'Attention': {
-            'name': 'Attention & Focus',
-            'description': 'Ability to concentrate and ignore distractions',
-            'tips': ['Use a timer for focused work', 'Take short breaks between tasks', 'Create a quiet study space']
-        },
-        'General': {
-            'name': 'General Learning',
-            'description': 'Overall learning abilities',
-            'tips': ['Practice regularly', 'Get enough sleep', 'Stay positive']
-        }
-    }
-    
-    # Calculate overall performance
     scores = [r['percentage'] for r in test_results]
     avg_score = sum(scores) / len(scores)
     
-    # Analyze by category
     category_scores = {}
-    category_counts = {}
-    
     for result in test_results:
-        if result['game']:
+        if result.get('game'):
             category = result['game'].category
-            score = result['percentage']
-            
             if category not in category_scores:
                 category_scores[category] = []
-                category_counts[category] = 0
-            
-            category_scores[category].append(score)
-            category_counts[category] += 1
+            category_scores[category].append(result['percentage'])
     
-    # Build category analysis
     category_analysis = {}
     for category, scores_list in category_scores.items():
         avg = sum(scores_list) / len(scores_list)
-        skill_info = skill_descriptions.get(category, skill_descriptions['General'])
-        
         if avg >= 70:
             level = 'Strong'
-            explanation = f"You're doing very well in {skill_info['name']}! {skill_info['description']}"
+            explanation = f"You're doing very well in {category}!"
         elif avg >= 50:
             level = 'Developing'
-            explanation = f"You're making good progress in {skill_info['name']}. {skill_info['description']} With more practice, you'll get even better."
+            explanation = f"You're making good progress in {category}."
         else:
             level = 'Needs Attention'
-            explanation = f"{skill_info['name']} is an area to focus on. {skill_info['description']} Don't worry - with practice, you can improve!"
+            explanation = f"{category} is an area to focus on."
         
         category_analysis[category] = {
-            'name': skill_info['name'],
+            'name': category,
             'average': round(avg, 1),
             'level': level,
             'explanation': explanation,
-            'tips': skill_info['tips'],
-            'tests_taken': category_counts[category]
+            'tips': ['Practice regularly', 'Review mistakes'],
+            'tests_taken': len(scores_list)
         }
     
-    # Identify strengths
     strengths = []
-    for category, data in category_analysis.items():
-        if data['average'] >= 65:
-            strengths.append({
-                'category': category,
-                'name': data['name'],
-                'score': data['average'],
-                'message': f"You excel at {data['name']}! Keep up the great work."
-            })
-    strengths.sort(key=lambda x: x['score'], reverse=True)
-    strengths = strengths[:3] if strengths else [{'message': 'Complete more tests to identify your strengths!'}]
-    
-    # Identify weaknesses
     weaknesses = []
     for category, data in category_analysis.items():
-        if data['average'] < 55:
-            weaknesses.append({
-                'category': category,
-                'name': data['name'],
-                'score': data['average'],
-                'message': f"Let's work on {data['name']}. With practice, you can improve significantly!",
-                'tips': data['tips'][:2]
-            })
-    weaknesses.sort(key=lambda x: x['score'])
-    weaknesses = weaknesses[:3] if weaknesses else []
+        if data['average'] >= 65:
+            strengths.append({'name': category, 'score': data['average'], 'message': f"You excel at {category}!"})
+        elif data['average'] < 55:
+            weaknesses.append({'name': category, 'score': data['average'], 'message': f"Let's work on {category}."})
     
-    # Check if improving
-    improving = None
-    if len(scores) >= 3:
-        mid = len(scores) // 2
-        first_half_avg = sum(scores[:mid]) / mid
-        second_half_avg = sum(scores[mid:]) / (len(scores) - mid)
-        improving = second_half_avg > first_half_avg
-    
-    # Generate overall assessment
-    if avg_score >= 80:
-        overall_assessment = "Excellent work! Your performance is outstanding. You're mastering the material very well. Keep challenging yourself!"
-    elif avg_score >= 70:
-        overall_assessment = "Great job! You're performing above average. Your learning strategies are working well. Keep up the consistent effort!"
-    elif avg_score >= 60:
-        overall_assessment = "Good progress! You're on the right track. With a bit more practice in specific areas, you'll see even better results."
+    if avg_score >= 70:
+        overall = "Excellent work! You're mastering the material very well."
+        motivation = "Amazing work! Keep challenging yourself!"
     elif avg_score >= 50:
-        overall_assessment = "You're making progress! Some areas need more attention, but you're building a solid foundation. Stay persistent!"
+        overall = "Good progress! You're on the right track."
+        motivation = "Great progress! Keep going!"
     else:
-        overall_assessment = "Learning takes time and practice. Don't be discouraged! Let's focus on specific areas where small improvements can make a big difference."
-    
-    # Generate recommendations
-    recommendations = []
-    
-    for weakness in weaknesses[:2]:
-        recommendations.append({
-            'priority': 'High',
-            'area': weakness['name'],
-            'recommendation': f"Focus on {weakness['name']}. {weakness['tips'][0]}",
-            'action': f"Practice {weakness['category']} games 2-3 times per week",
-            'expected_improvement': "You could see significant improvement within 2-3 weeks"
-        })
-    
-    if strengths and strengths[0].get('category'):
-        recommendations.append({
-            'priority': 'Medium',
-            'area': strengths[0]['name'],
-            'recommendation': f"Build on your strength in {strengths[0]['name']}! Try more challenging games in this category.",
-            'action': "Challenge yourself with advanced level games",
-            'expected_improvement': "Continue to excel and build confidence"
-        })
-    
-    if learner.age <= 7:
-        recommendations.append({
-            'priority': 'Low',
-            'area': 'Learning Style',
-            'recommendation': "Young learners benefit from hands-on activities and visual learning.",
-            'action': "Use colorful materials and physical activities while learning",
-            'expected_improvement': "More engaging and enjoyable learning"
-        })
-    else:
-        recommendations.append({
-            'priority': 'Low',
-            'area': 'Study Habits',
-            'recommendation': f"At age {learner.age}, short focused sessions work best. Try 15-20 minute practice sessions.",
-            'action': "Use a timer and take short breaks",
-            'expected_improvement': "Better focus and retention"
-        })
-    
-    # Generate motivational message
-    if avg_score >= 80:
-        motivation = "Amazing work! You're showing excellent understanding. Keep challenging yourself!"
-    elif avg_score >= 70:
-        motivation = "Great progress! Your hard work is paying off. Keep going!"
-    elif avg_score >= 60:
-        motivation = "You're on the right track! Consistent practice will help you reach your goals."
-    elif avg_score >= 50:
-        motivation = "You're making progress! Every test helps you learn and grow. Stay determined!"
-    else:
-        motivation = "Learning is a journey. Every test teaches you something new. Don't give up - you've got this!"
+        overall = "Learning takes time. Don't be discouraged!"
+        motivation = "Every test teaches you something new. Keep trying!"
     
     return {
         'summary': {
@@ -1079,13 +919,13 @@ def generate_ai_analysis(test_results, learner):
             'average_score': round(avg_score, 1),
             'best_score': max(scores),
             'lowest_score': min(scores),
-            'improving': improving
+            'improving': None
         },
         'category_analysis': category_analysis,
-        'strengths': strengths,
-        'weaknesses': weaknesses,
-        'overall_assessment': overall_assessment,
-        'recommendations': recommendations,
+        'strengths': strengths[:3] if strengths else [{'message': 'Complete more tests to identify strengths!'}],
+        'weaknesses': weaknesses[:3],
+        'overall_assessment': overall,
+        'recommendations': [],
         'motivation': motivation,
         'analysis_date': datetime.now().strftime('%Y-%m-%d %H:%M')
     }
@@ -1093,7 +933,6 @@ def generate_ai_analysis(test_results, learner):
 @app.route('/ai/analysis')
 @login_required
 def ai_analysis():
-    """AI-powered learning analysis dashboard"""
     if current_user.role != 'learner':
         flash('AI analysis is only available for learners', 'warning')
         return redirect(url_for('learner_dashboard'))
@@ -1126,8 +965,6 @@ def ai_analysis():
                          analysis=analysis,
                          test_results=test_results)
 
-# ==================== LOGOUT ROUTE ====================
-
 @app.route('/logout')
 @login_required
 def logout():
@@ -1138,7 +975,6 @@ def logout():
 # ==================== RUN THE APP ====================
 
 if __name__ == '__main__':
-    init_db()
     port = int(os.environ.get('PORT', 5000))
     debug_mode = os.environ.get('RENDER', 'false').lower() != 'true'
     app.run(debug=debug_mode, host='0.0.0.0', port=port)

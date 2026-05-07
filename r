@@ -11,11 +11,3 @@ services:
         value: 3.11.8
       - key: SECRET_KEY
         generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: edubridge_db
-          property: connectionString
-
-databases:
-  - name: edubridge_db
-    plan: free
