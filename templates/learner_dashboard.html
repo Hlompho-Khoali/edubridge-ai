@@ -280,7 +280,7 @@
                 <span class="test-info-item">⏰ 60 Minutes</span>
             </div>
             
-            {% if item.assignment.status == 'in_progress' %}
+ {% if item.assignment.status == 'in_progress' %}
     <div class="time-limit">
         ⚠️ You have started this test! Time is running out. Please complete it within the time limit.
     </div>
@@ -289,7 +289,16 @@
     {% if item.assignment %}
         <a href="{{ url_for('start_test', assignment_id=item.assignment.id) }}" class="btn-start">Start Test →</a>
     {% else %}
-        <a href="{{ url_for('memory_match_game') }}" class="btn-start">🐘 Play Memory Match →</a>
+        {% set game_name = item.game.name %}
+        {% if 'Memory' in game_name or 'Elephant' in game_name %}
+            <a href="{{ url_for('memory_match_game') }}" class="btn-start">Play Memory Match →</a>
+        {% elif 'Penguin' in game_name or 'Says' in game_name %}
+            <a href="{{ url_for('penguin_says_game') }}" class="btn-start">Play Penguin Says →</a>
+        {% elif 'Red Light' in game_name or 'Green Light' in game_name %}
+            <a href="{{ url_for('red_light_game') }}" class="btn-start">Play Red Light, Green Light →</a>
+        {% else %}
+            <a href="#" class="btn-start" style="opacity: 0.5; cursor: not-allowed;">Coming Soon →</a>
+        {% endif %}
     {% endif %}
 {% endif %}
         </div>
@@ -360,8 +369,8 @@
     </div>
 {% endif %}
 
-<div style="text-align: center; margin-top: 30px; display: flex; gap: 15px; justify-content: center;">
-    <a href="{{ url_for('ai_analysis') }}" class="btn-start" style="padding: 10px 25px; text-decoration: none;">🤖 AI Learning Analysis</a>
-    <a href="{{ url_for('index') }}" class="btn-view" style="padding: 10px 25px; text-decoration: none;">🏠 Back to Home</a>
+<<div style="text-align: center; margin-top: 30px; display: flex; gap: 15px; justify-content: center;">
+    <a href="{{ url_for('ai_analysis') }}" class="btn-start" style="padding: 10px 25px; text-decoration: none;">AI Learning Analysis</a>
+    <a href="{{ url_for('index') }}" class="btn-view" style="padding: 10px 25px; text-decoration: none;">Back to Home</a>
 </div>
 {% endblock %}

@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from models import db, User, Admin, Educator, Parent, Learner, Game, TestAssignment, TestResult
+from models import db, User, Admin, Educator, Parent, Learner, Game, TestAssignment, TestResult, CognitiveAssessment
 from utils.games_data import get_all_games
 from utils.validators import validate_rsa_id, calculate_age, validate_learner_age, determine_grade_from_age
 from datetime import datetime
@@ -824,7 +824,68 @@ def parent_dashboard():
     
     return render_template('parent_dashboard.html', 
                          learners_data=learners_data)
+@app.route('/game/penguin-says')
+@login_required
+def penguin_says_game():
+    if current_user.role != 'learner':
+        return redirect(url_for('login'))
+    return render_template('game_penguin_says.html')
 
+@app.route('/game/red-light')
+@login_required
+def red_light_game():
+    if current_user.role != 'learner':
+        return redirect(url_for('login'))
+    return render_template('game_red_light.html')
+
+@app.route('/game/save-result', methods=['POST'])
+@login_required
+def save_game_result():
+    if current_user.role != 'learner':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.get_json()
+    learner = Learner.query.filter_by(user_id=current_user.id).first()
+    
+    # Create an assignment for this game if it doesn't exist
+    game = Game.query.filter_by(name=data.get('game_name')).first()
+    if not game:
+        return jsonify({'error': 'Game not found'}), 404
+    
+    # Check if already have result for this game
+    existing_assignment = TestAssignment.query.filter_by(
+        learner_id=learner.id,
+        game_id=game.id
+    ).first()
+    
+    if not existing_assignment:
+        # Create new assignment
+        assignment = TestAssignment(
+            game_id=game.id,
+            learner_id=learner.id,
+            status='completed',
+            completed_at=datetime.utcnow()
+        )
+        db.session.add(assignment)
+        db.session.flush()
+        
+        # Calculate percentage
+        total_points = len(json.loads(game.questions)) * 2 if game.questions else 30
+        earned_points = int((data.get('percentage', 0) / 100) * total_points)
+        
+        # Create result
+        result = TestResult(
+            assignment_id=assignment.id,
+            score=earned_points,
+            percentage=data.get('percentage', 0),
+            passed=data.get('passed', False),
+            answers=json.dumps(['game']),
+            completed_at=datetime.utcnow()
+        )
+        db.session.add(result)
+        db.session.commit()
+    
+    return jsonify({'success': True})
 @app.route('/parent/learner-progress/<int:learner_id>')
 @login_required
 def view_learner_progress(learner_id):

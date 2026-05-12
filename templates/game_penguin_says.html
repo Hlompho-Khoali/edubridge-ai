@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}🐧 Penguin Says{% endblock %}
+{% block title %}Penguin Says - Impulse Control Game{% endblock %}
 
 {% block content %}
 <style>
@@ -12,224 +12,336 @@
     }
     
     .penguin {
-        font-size: 8rem;
+        font-size: 100px;
         margin: 20px;
-        animation: bounce 2s infinite;
+        animation: bounce 1s ease infinite;
     }
     
     @keyframes bounce {
         0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-20px); }
+        50% { transform: translateY(-10px); }
     }
     
     .instruction {
-        font-size: 2rem;
+        font-size: 28px;
         font-weight: bold;
-        padding: 20px;
-        border-radius: 15px;
-        margin: 20px;
-    }
-    
-    .instruction-speak {
-        background: #667eea;
+        padding: 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-    }
-    
-    .instruction-no {
-        background: #e53e3e;
-        color: white;
+        border-radius: 20px;
+        margin: 20px 0;
+        min-height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .buttons {
         display: flex;
         gap: 20px;
         justify-content: center;
-        margin: 30px;
+        margin: 30px 0;
     }
     
-    .tap-btn {
+    .btn-yes {
         background: #48bb78;
         color: white;
-        padding: 20px 40px;
-        font-size: 1.5rem;
-        border: none;
-        border-radius: 50px;
-        cursor: pointer;
-    }
-    
-    .no-tap-btn {
-        background: #e53e3e;
-        color: white;
-        padding: 20px 40px;
-        font-size: 1.5rem;
-        border: none;
-        border-radius: 50px;
-        cursor: pointer;
-    }
-    
-    .next-btn {
-        background: #667eea;
-        color: white;
-        padding: 15px 30px;
+        padding: 15px 40px;
         font-size: 1.2rem;
         border: none;
-        border-radius: 25px;
+        border-radius: 50px;
         cursor: pointer;
-        margin: 10px;
+        transition: transform 0.2s;
+    }
+    
+    .btn-no {
+        background: #e53e3e;
+        color: white;
+        padding: 15px 40px;
+        font-size: 1.2rem;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .btn-yes:hover, .btn-no:hover {
+        transform: scale(1.05);
     }
     
     .score-board {
         display: flex;
         justify-content: space-between;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: #f7fafc;
         padding: 15px 25px;
         border-radius: 15px;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
     }
     
-    .message {
-        padding: 20px;
+    .score-item {
+        text-align: center;
+    }
+    
+    .score-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+    
+    .feedback {
+        padding: 15px;
         border-radius: 10px;
-        margin: 20px;
-        font-size: 1.2rem;
+        margin: 20px 0;
+        font-size: 1.1rem;
     }
     
-    .correct { background: #d4edda; color: #155724; }
-    .wrong { background: #f8d7da; color: #721c24; }
+    .feedback-correct {
+        background: #d4edda;
+        color: #155724;
+    }
     
-    .celebration {
+    .feedback-wrong {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .next-btn {
+        background: #667eea;
+        color: white;
+        padding: 12px 30px;
+        font-size: 1rem;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+    
+    .game-complete {
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 30px 50px;
-        border-radius: 30px;
-        font-size: 2rem;
+        padding: 40px;
+        border-radius: 20px;
         text-align: center;
         z-index: 1000;
-        animation: pop 0.5s ease;
+        min-width: 400px;
     }
     
-    @keyframes pop {
-        0% { transform: translate(-50%, -50%) scale(0); }
-        100% { transform: translate(-50%, -50%) scale(1); }
+    .game-complete h2 {
+        font-size: 2rem;
+        margin-bottom: 20px;
+    }
+    
+    .game-complete button {
+        background: white;
+        color: #667eea;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+    
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 999;
+    }
+    
+    @media (max-width: 600px) {
+        .instruction {
+            font-size: 20px;
+        }
+        .btn-yes, .btn-no {
+            padding: 12px 25px;
+        }
     }
 </style>
 
 <div class="game-container">
-    <div class="penguin">🐧</div>
-    <h1>Penguin Says</h1>
-    <p>Only do what Penguin SAYS! If Penguin doesn't say it, DON'T do it!</p>
-    
     <div class="score-board">
-        <div>Score: <span id="score">0</span>/<span id="total">10</span></div>
-        <div>Round: <span id="round">1</span>/<span id="maxRound">10</span></div>
+        <div class="score-item">
+            <div class="score-value" id="score">0</div>
+            <div>Score</div>
+        </div>
+        <div class="score-item">
+            <div class="score-value" id="round">0</div>
+            <div>/ <span id="totalRounds">10</span></div>
+        </div>
+        <div class="score-item">
+            <div class="score-value" id="reactionTime">0</div>
+            <div>ms (avg)</div>
+        </div>
     </div>
     
-    <div class="instruction" id="instruction">Ready?</div>
+    <div class="penguin">🐧</div>
+    
+    <div class="instruction" id="instruction">
+        Get ready...
+    </div>
     
     <div class="buttons">
-        <button class="tap-btn" onclick="makeChoice('tap')">✅ TAP / YES</button>
-        <button class="no-tap-btn" onclick="makeChoice('no')">❌ DON'T TAP / NO</button>
+        <button class="btn-yes" onclick="makeChoice(true)">YES - Do it</button>
+        <button class="btn-no" onclick="makeChoice(false)">NO - Don't do it</button>
     </div>
     
-    <div class="message" id="message"></div>
-    <button class="next-btn" id="nextBtn" style="display:none;" onclick="nextRound()">Next Round →</button>
+    <div id="feedback" class="feedback"></div>
 </div>
 
 <script>
     const rounds = [
-        { text: "Penguin says: Touch your nose!", shouldTap: true },
-        { text: "Jump up and down!", shouldTap: false },
-        { text: "Penguin says: Clap your hands!", shouldTap: true },
-        { text: "Stand up!", shouldTap: false },
-        { text: "Penguin says: Smile!", shouldTap: true },
-        { text: "Wave your hand!", shouldTap: false },
-        { text: "Penguin says: Blink your eyes!", shouldTap: true },
-        { text: "Stomp your feet!", shouldTap: false },
-        { text: "Penguin says: Say 'Hi'!", shouldTap: true },
-        { text: "Turn around!", shouldTap: false }
+        { text: "Penguin says: Touch your nose!", shouldDo: true },
+        { text: "Stand up from your chair!", shouldDo: false },
+        { text: "Penguin says: Clap your hands!", shouldDo: true },
+        { text: "Jump up and down!", shouldDo: false },
+        { text: "Penguin says: Smile!", shouldDo: true },
+        { text: "Wave your hand!", shouldDo: false },
+        { text: "Penguin says: Blink your eyes!", shouldDo: true },
+        { text: "Stomp your feet!", shouldDo: false },
+        { text: "Penguin says: Say 'Hello'!", shouldDo: true },
+        { text: "Spin around!", shouldDo: false }
     ];
     
     let currentRound = 0;
     let score = 0;
-    let waitingForNext = false;
+    let reactionTimes = [];
+    let roundStartTime = null;
+    let waitingForResponse = true;
+    let timeoutId = null;
+    
+    const totalRounds = rounds.length;
+    document.getElementById('totalRounds').innerText = totalRounds;
     
     function loadRound() {
-        if (currentRound >= rounds.length) {
+        if (currentRound >= totalRounds) {
             finishGame();
             return;
         }
         
+        waitingForResponse = true;
+        roundStartTime = Date.now();
+        
+        const round = rounds[currentRound];
+        document.getElementById('instruction').innerHTML = round.text;
+        document.getElementById('feedback').innerHTML = '';
         document.getElementById('round').innerText = currentRound + 1;
-        document.getElementById('instruction').innerHTML = rounds[currentRound].text;
-        document.getElementById('instruction').className = 'instruction instruction-speak';
-        document.getElementById('message').innerHTML = '';
-        document.getElementById('message').className = 'message';
-        document.getElementById('nextBtn').style.display = 'none';
-        waitingForNext = false;
+        
+        // Auto-fail after 5 seconds
+        timeoutId = setTimeout(() => {
+            if (waitingForResponse) {
+                noResponse();
+            }
+        }, 5000);
     }
     
     function makeChoice(choice) {
-        if (waitingForNext) return;
+        if (!waitingForResponse) return;
+        
+        clearTimeout(timeoutId);
+        waitingForResponse = false;
+        
+        const reactionTime = Date.now() - roundStartTime;
+        reactionTimes.push(reactionTime);
+        updateAverageReaction();
         
         const round = rounds[currentRound];
-        const isCorrect = (choice === 'tap' && round.shouldTap) || (choice === 'no' && !round.shouldTap);
-        
-        waitingForNext = true;
+        const isCorrect = (choice === round.shouldDo);
         
         if (isCorrect) {
-            score++;
+            score += 10;
             document.getElementById('score').innerText = score;
-            document.getElementById('message').innerHTML = '✅ Correct! Great job following instructions! ✅';
-            document.getElementById('message').className = 'message correct';
+            showFeedback(true, reactionTime);
         } else {
-            document.getElementById('message').innerHTML = '❌ Oops! ' + (round.shouldTap ? 'Penguin SAID to do it!' : 'Penguin did NOT say to do that!') + ' ❌';
-            document.getElementById('message').className = 'message wrong';
+            showFeedback(false, reactionTime);
         }
         
-        document.getElementById('nextBtn').style.display = 'inline-block';
+        setTimeout(() => {
+            currentRound++;
+            loadRound();
+        }, 1500);
     }
     
-    function nextRound() {
-        currentRound++;
-        loadRound();
+    function noResponse() {
+        if (!waitingForResponse) return;
+        
+        waitingForResponse = false;
+        showFeedback(false, 5000, true);
+        
+        setTimeout(() => {
+            currentRound++;
+            loadRound();
+        }, 1500);
+    }
+    
+    function showFeedback(isCorrect, reactionTime, isTimeout = false) {
+        const feedbackDiv = document.getElementById('feedback');
+        
+        if (isTimeout) {
+            feedbackDiv.innerHTML = '⏰ Time\'s up! Too slow!';
+            feedbackDiv.className = 'feedback feedback-wrong';
+        } else if (isCorrect) {
+            feedbackDiv.innerHTML = `✅ CORRECT! (${reactionTime}ms)`;
+            feedbackDiv.className = 'feedback feedback-correct';
+        } else {
+            feedbackDiv.innerHTML = `❌ WRONG! You should have ${rounds[currentRound].shouldDo ? 'done it' : 'waited'}.`;
+            feedbackDiv.className = 'feedback feedback-wrong';
+        }
+    }
+    
+    function updateAverageReaction() {
+        if (reactionTimes.length === 0) return;
+        const avg = Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length);
+        document.getElementById('reactionTime').innerText = avg;
     }
     
     function finishGame() {
-        const percent = (score / rounds.length) * 100;
-        const passed = percent >= 70;
+        const percentage = (score / (totalRounds * 10)) * 100;
+        const passed = percentage >= 70;
+        const avgReaction = reactionTimes.length > 0 
+            ? Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length)
+            : 0;
         
-        let message = '';
-        if (passed) {
-            message = `🎉 PERFECT! You scored ${score}/${rounds.length} (${percent}%)! 🎉<br>You're a great listener!`;
-            sendCompletion();
-        } else {
-            message = `Good try! You scored ${score}/${rounds.length} (${percent}%).<br>Let's play again to improve!`;
-        }
-        
-        const celebration = document.createElement('div');
-        celebration.className = 'celebration';
-        celebration.innerHTML = message;
-        document.body.appendChild(celebration);
-        
-        setTimeout(() => {
-            celebration.remove();
-            window.location.href = '/learner/dashboard';
-        }, 3000);
-    }
-    
-    function sendCompletion() {
-        fetch('/game/complete', {
+        // Save result to server
+        fetch('/game/save-result', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ game_id: 14, score: score, attempts: currentRound })
+            body: JSON.stringify({
+                game_name: 'Penguin Says',
+                percentage: percentage,
+                score: score,
+                passed: passed,
+                reaction_time: avgReaction,
+                errors: totalRounds - (score / 10)
+            })
         });
+        
+        // Show completion screen
+        const overlay = document.createElement('div');
+        overlay.className = 'overlay';
+        document.body.appendChild(overlay);
+        
+        const completeDiv = document.createElement('div');
+        completeDiv.className = 'game-complete';
+        completeDiv.innerHTML = `
+            <h2>${passed ? '🎉 GAME COMPLETE! 🎉' : 'Game Complete'}</h2>
+            <p>Score: ${score} / ${totalRounds * 10}</p>
+            <p>Percentage: ${percentage}%</p>
+            <p>Average Reaction: ${avgReaction}ms</p>
+            <p>${passed ? 'Excellent impulse control!' : 'Keep practicing!'}</p>
+            <button onclick="window.location.href='/learner/dashboard'">Return to Dashboard</button>
+            <button onclick="window.location.reload()">Play Again</button>
+        `;
+        document.body.appendChild(completeDiv);
     }
     
+    // Start the game
     loadRound();
 </script>
 {% endblock %}

@@ -74,7 +74,7 @@ class Learner(db.Model):
     
     login_code = db.Column(db.String(6), unique=True, nullable=True)
     # Phase tracking
-    current_phase = db.Column(db.Integer, default=1)  # ← MUST HAVE INDENTATION (4 spaces)
+    current_phase = db.Column(db.Integer, default=1)
     phase1_completed = db.Column(db.Boolean, default=False)
     phase2_completed = db.Column(db.Boolean, default=False)
     phase3_completed = db.Column(db.Boolean, default=False)
@@ -137,7 +137,8 @@ class TestResult(db.Model):
     def set_answers(self, answers):
         self.answers = json.dumps(answers)
 
-    class CognitiveAssessment(db.Model):
+# CognitiveAssessment class - at SAME LEVEL as other classes (NOT inside TestResult)
+class CognitiveAssessment(db.Model):
     __tablename__ = 'cognitive_assessments'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -153,12 +154,12 @@ class TestResult(db.Model):
     language_score = db.Column(db.Float, default=0)
     
     # ADHD indicators
-    adhd_risk_score = db.Column(db.Float, default=0)  # 0-100, higher = more indicators
+    adhd_risk_score = db.Column(db.Float, default=0)
     attention_deficit_risk = db.Column(db.Float, default=0)
     hyperactivity_risk = db.Column(db.Float, default=0)
     impulsivity_risk = db.Column(db.Float, default=0)
     
-    # Percentile rankings (compared to same age group)
+    # Percentile rankings
     attention_percentile = db.Column(db.Float, default=50)
     memory_percentile = db.Column(db.Float, default=50)
     

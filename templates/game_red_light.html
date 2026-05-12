@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Red Light, Green Light - Attention Game{% endblock %}
+
+{% block content %}
+<style>
+    .game-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .light {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        margin: 30px auto;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .light-red {
+        background: radial-gradient(circle at 30% 30%, #ff6b6b, #cc0000);
+        box-shadow: 0 0 30px rgba(255,0,0,0.5);
+    }
+    
+    .light-green {
+        background: radial-gradient(circle at 30% 30%, #6bff6b, #00cc00);
+        box-shadow: 0 0 30px rgba(0,255,0,0.5);
+    }
+    
+    .signal-text {
+        font-size: 36px;
+        font-weight: bold;
+        margin: 20px;
+    }
+    
+    .buttons {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        margin: 30px 0;
+    }
+    
+    .btn-go {
+        background: #48bb78;
+        color: white;
+        padding: 15px 40px;
+        font-size: 1.2rem;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+    }
+    
+    .btn-stop {
+        background: #e53e3e;
+        color: white;
+        padding: 15px 40px;
+        font-size: 1.2rem;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+    }
+    
+    .score-board {
+        display: flex;
+        justify-content: space-between;
+        background: #f7fafc;
+        padding: 15px 25px;
+        border-radius: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .feedback {
+        padding: 15px;
+        border-radius: 10px;
+        margin: 20px 0;
+        font-size: 1.1rem;
+    }
+    
+    .feedback-correct {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .feedback-wrong {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .light-red, .light-green {
+        animation: pulse 1s infinite;
+    }
+</style>
+
+<div class="game-container">
+    <div class="score-board">
+        <div class="score-item">
+            <div class="score-value" id="score">0</div>
+            <div>Score</div>
+        </div>
+        <div class="score-item">
+            <div class="score-value" id="round">0</div>
+            <div>/ <span id="totalRounds">10</span></div>
+        </div>
+        <div class="score-item">
+            <div class="score-value" id="correctCount">0</div>
+            <div>Correct</div>
+        </div>
+    </div>
+    
+    <div id="light" class="light"></div>
+    <div id="signalText" class="signal-text"></div>
+    
+    <div class="buttons">
+        <button class="btn-go" onclick="makeChoice('go')">GO (Tap)</button>
+        <button class="btn-stop" onclick="makeChoice('stop')">STOP (Don't Tap)</button>
+    </div>
+    
+    <div id="feedback" class="feedback"></div>
+</div>
+
+<script>
+    const rounds = [
+        { action: 'GO', correct: 'go' },
+        { action: 'GO', correct: 'go' },
+        { action: 'STOP', correct: 'stop' },
+        { action: 'GO', correct: 'go' },
+        { action: 'STOP', correct: 'stop' },
+        { action: 'STOP', correct: 'stop' },
+        { action: 'GO', correct: 'go' },
+        { action: 'STOP', correct: 'stop' },
+        { action: 'GO', correct: 'go' },
+        { action: 'STOP', correct: 'stop' }
+    ];
+    
+    let currentRound = 0;
+    let score = 0;
+    let correctCount = 0;
+    let roundStartTime = null;
+    let waitingForResponse = true;
+    let timeoutId = null;
+    
+    const totalRounds = rounds.length;
+    document.getElementById('totalRounds').innerText = totalRounds;
+    
+    function loadRound() {
+        if (currentRound >= totalRounds) {
+            finishGame();
+            return;
+        }
+        
+        waitingForResponse = true;
+        roundStartTime = Date.now();
+        
+        const round = rounds[currentRound];
+        const light = document.getElementById('light');
+        const signalText = document.getElementById('signalText');
+        
+        if (round.action === 'GO') {
+            light.className = 'light light-green';
+            signalText.innerHTML = '🚦 GREEN LIGHT - GO! 🚦';
+        } else {
+            light.className = 'light light-red';
+            signalText.innerHTML = '🚦 RED LIGHT - STOP! 🚦';
+        }
+        
+        document.getElementById('feedback').innerHTML = '';
+        document.getElementById('round').innerText = currentRound + 1;
+        
+        timeoutId = setTimeout(() => {
+            if (waitingForResponse) {
+                noResponse();
+            }
+        }, 3000);
+    }
+    
+    function makeChoice(choice) {
+        if (!waitingForResponse) return;
+        
+        clearTimeout(timeoutId);
+        waitingForResponse = false;
+        
+        const reactionTime = Date.now() - roundStartTime;
+        const round = rounds[currentRound];
+        const isCorrect = (choice === round.correct);
+        
+        if (isCorrect) {
+            score += 10;
+            correctCount++;
+            document.getElementById('score').innerText = score;
+            document.getElementById('correctCount').innerText = correctCount;
+            showFeedback(true, reactionTime);
+        } else {
+            showFeedback(false, reactionTime);
+        }
+        
+        setTimeout(() => {
+            currentRound++;
+            loadRound();
+        }, 1200);
+    }
+    
+    function noResponse() {
+        if (!waitingForResponse) return;
+        waitingForResponse = false;
+        showFeedback(false, 3000, true);
+        
+        setTimeout(() => {
+            currentRound++;
+            loadRound();
+        }, 1200);
+    }
+    
+    function showFeedback(isCorrect, reactionTime, isTimeout = false) {
+        const feedbackDiv = document.getElementById('feedback');
+        
+        if (isTimeout) {
+            feedbackDiv.innerHTML = '⏰ No response! Too slow. You must respond faster.';
+            feedbackDiv.className = 'feedback feedback-wrong';
+        } else if (isCorrect) {
+            feedbackDiv.innerHTML = `✅ CORRECT! (${reactionTime}ms) Well done!`;
+            feedbackDiv.className = 'feedback feedback-correct';
+        } else {
+            const round = rounds[currentRound];
+            feedbackDiv.innerHTML = `❌ WRONG! You ${round.correct === 'go' ? 'should have tapped' : 'should have waited'}.`;
+            feedbackDiv.className = 'feedback feedback-wrong';
+        }
+    }
+    
+    function finishGame() {
+        const percentage = (score / (totalRounds * 10)) * 100;
+        const passed = percentage >= 70;
+        
+        fetch('/game/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                game_name: 'Red Light, Green Light',
+                percentage: percentage,
+                score: score,
+                passed: passed,
+                correct_count: correctCount,
+                total_rounds: totalRounds
+            })
+        });
+        
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:999;';
+        document.body.appendChild(overlay);
+        
+        const completeDiv = document.createElement('div');
+        completeDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;padding:40px;border-radius:20px;text-align:center;z-index:1000;min-width:350px;';
+        completeDiv.innerHTML = `
+            <h2>${passed ? '🎉 GAME COMPLETE! 🎉' : 'Game Complete'}</h2>
+            <p>Score: ${score} / ${totalRounds * 10}</p>
+            <p>Percentage: ${percentage}%</p>
+            <p>Correct: ${correctCount} / ${totalRounds}</p>
+            <p>${passed ? 'Great attention and impulse control!' : 'Keep practicing your focus!'}</p>
+            <button onclick="window.location.href='/learner/dashboard'" style="background:white;color:#667eea;padding:10px 25px;border:none;border-radius:25px;margin:10px;cursor:pointer;">Return to Dashboard</button>
+            <button onclick="window.location.reload()" style="background:white;color:#667eea;padding:10px 25px;border:none;border-radius:25px;margin:10px;cursor:pointer;">Play Again</button>
+        `;
+        document.body.appendChild(completeDiv);
+    }
+    
+    loadRound();
+</script>
+{% endblock %}
