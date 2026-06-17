@@ -5,6 +5,10 @@
 {% block content %}
 <style>
     .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
         margin-bottom: 30px;
     }
     
@@ -16,25 +20,38 @@
     }
     
     .stat-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: white;
         padding: 20px;
         border-radius: 10px;
         text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-top: 4px solid #667eea;
     }
     
     .stat-card h3 {
         font-size: 2rem;
-        margin-bottom: 10px;
+        color: #667eea;
+        margin-bottom: 5px;
+    }
+    
+    .stat-card p {
+        color: #666;
+        font-size: 0.9rem;
     }
     
     .section {
-        margin-bottom: 40px;
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
     
     .section h3 {
         color: #667eea;
         margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e0e0e0;
     }
     
     .assign-form {
@@ -54,11 +71,12 @@
         font-weight: bold;
     }
     
-    .form-group select {
+    .form-group select, .form-group input {
         width: 100%;
         padding: 10px;
         border: 1px solid #ddd;
         border-radius: 5px;
+        font-size: 1rem;
     }
     
     .badge {
@@ -66,6 +84,7 @@
         border-radius: 5px;
         font-size: 0.85rem;
         font-weight: bold;
+        display: inline-block;
     }
     
     .badge-passed {
@@ -88,23 +107,9 @@
         color: #0c5460;
     }
     
-    .games-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 15px;
-        margin-top: 20px;
-    }
-    
-    .game-card {
-        background: #f8f9fa;
-        padding: 15px;
-        border-radius: 10px;
-        border-left: 4px solid #667eea;
-    }
-    
-    .game-card h4 {
-        color: #667eea;
-        margin-bottom: 5px;
+    .badge-recommendation {
+        background: #e7f3ff;
+        color: #004085;
     }
     
     table {
@@ -121,19 +126,725 @@
     th {
         background: #f5f7fa;
         color: #667eea;
+        font-weight: 600;
+    }
+    
+    tr:hover {
+        background: #f8f9fa;
     }
     
     .btn-small {
         padding: 5px 10px;
         font-size: 0.85rem;
+        border-radius: 5px;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary:hover {
+        background: #5a67d8;
+        transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        padding: 5px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 0.85rem;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+    
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .btn-danger:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+    }
+    
+    .btn-success {
+        background: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .btn-success:hover {
+        background: #218838;
+        transform: translateY(-2px);
+    }
+    
+    .btn-ai {
+        background: #667eea;
+        color: white;
+        padding: 5px 12px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+    }
+    
+    .btn-ai:hover {
+        background: #5a67d8;
+        transform: translateY(-2px);
+    }
+    
+    .btn-path {
+        background: #17a2b8;
+        color: white;
+        padding: 5px 12px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+    }
+    
+    .btn-path:hover {
+        background: #138496;
+        transform: translateY(-2px);
+    }
+    
+    .btn-generator {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-generator:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
+    }
+    
+    .btn-latest {
+        background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-latest:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(237, 137, 54, 0.4);
+    }
+    
+    .search-box {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .search-box input {
+        flex: 1;
+        min-width: 200px;
+        padding: 10px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.2s;
+    }
+    
+    .search-box input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .search-box .btn {
+        padding: 10px 25px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .search-box .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+    
+    .search-box .btn-primary:hover {
+        background: #5a67d8;
+    }
+    
+    .search-box .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .search-box .btn-secondary:hover {
+        background: #5a6268;
+    }
+    
+    .learner-login-code {
+        font-family: monospace;
+        background: #e7f3ff;
+        padding: 3px 10px;
+        border-radius: 5px;
+        font-size: 0.9rem;
+        display: inline-block;
+    }
+    
+    .recommendation-box {
+        background: #f0f7ff;
+        border-left: 4px solid #667eea;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 10px;
+    }
+    
+    .recommendation-box ul {
+        margin: 10px 0 0 20px;
+        padding: 0;
+    }
+    
+    .recommendation-box li {
+        margin-bottom: 5px;
+        color: #2d3748;
+    }
+    
+    .view-all-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .view-all-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .logout-form {
+        display: inline;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .logout-btn {
+        background: #dc3545;
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .logout-btn:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .container {
+        margin-top: 25px;
+        padding-bottom: 50px;
+    }
+
+    /* ===== 3-STEP PROCESS STYLES ===== */
+    .steps-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin: 25px 0 10px 0;
+    }
+    
+    .step-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px 20px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        border: 2px solid #e8ecf1;
+        transition: all 0.3s;
+        position: relative;
+    }
+    
+    .step-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+    
+    .step-card .step-number {
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+    
+    .step-card .step-icon {
+        font-size: 2.5rem;
+        color: #667eea;
+        margin: 10px 0 15px 0;
+        display: block;
+    }
+    
+    .step-card h4 {
+        color: #2d3748;
+        font-weight: 700;
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+    }
+    
+    .step-card p {
+        color: #718096;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 15px;
+    }
+    
+    .step-card .step-action {
+        display: inline-block;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    
+    .step-card .step-action.primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .step-card .step-action.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .step-card .step-action.secondary {
+        background: #e8ecf1;
+        color: #4a5568;
+    }
+    
+    .step-card .step-action.secondary:hover {
+        background: #d5d9e0;
+    }
+    
+    .step-card .step-action.success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .step-card .step-action.success:hover {
+        background: #218838;
+        transform: translateY(-2px);
+    }
+    
+    .step-card.active {
+        border-color: #667eea;
+        background: #f8faff;
+    }
+    
+    .step-card.completed {
+        border-color: #28a745;
+        background: #f0fff4;
+    }
+    
+    .step-card .step-status {
+        display: inline-block;
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-top: 10px;
+    }
+    
+    .step-card .step-status.active {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .step-card .step-status.completed {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .step-card .step-status.pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    /* ===== LATEST GAMES SECTION ===== */
+    .latest-games-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
+    }
+    
+    .latest-game-card {
+        background: #f0fff4;
+        border: 2px solid #48bb78;
+        border-radius: 10px;
+        padding: 15px;
+        transition: all 0.2s;
+    }
+    
+    .latest-game-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(72, 187, 120, 0.2);
+    }
+    
+    .latest-game-card .game-title {
+        color: #2d3748;
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 5px;
+    }
+    
+    .latest-game-card .game-desc {
+        font-size: 0.85rem;
+        color: #718096;
+    }
+    
+    .latest-game-card .game-meta {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    
+    .latest-game-card .game-meta .tag-latest {
+        background: #48bb78;
+        color: white;
+        padding: 2px 10px;
+        border-radius: 15px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    
+    .latest-game-card .game-meta .tag-date {
+        font-size: 0.7rem;
+        color: #718096;
+    }
+    
+    .latest-game-card .btn-view-game {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 5px 15px;
+        background: #667eea;
+        color: white;
+        border-radius: 5px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+    }
+    
+    .latest-game-card .btn-view-game:hover {
+        background: #5a67d8;
+        transform: translateY(-2px);
+    }
+
+    /* ===== FLOATING ACTION BUTTON ===== */
+    .fab-container {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+    }
+    
+    .fab-button {
+        width: 65px;
+        height: 65px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        color: white;
+        border: none;
+        box-shadow: 0 8px 30px rgba(72, 187, 120, 0.4);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        position: relative;
+    }
+    
+    .fab-button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 12px 40px rgba(72, 187, 120, 0.5);
+    }
+    
+    .fab-button:active {
+        transform: scale(0.95);
+    }
+    
+    .fab-button .pulse-ring {
+        position: absolute;
+        top: -5px;
+        left: -5px;
+        right: -5px;
+        bottom: -5px;
+        border-radius: 50%;
+        border: 3px solid rgba(72, 187, 120, 0.3);
+        animation: pulse-ring 2s ease-out infinite;
+    }
+    
+    @keyframes pulse-ring {
+        0% { transform: scale(1); opacity: 0.8; }
+        100% { transform: scale(1.3); opacity: 0; }
+    }
+    
+    .fab-tooltip {
+        background: white;
+        color: #2d3748;
+        padding: 10px 16px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+        margin-right: 15px;
+        position: relative;
+        animation: slideIn 0.3s ease;
+        white-space: nowrap;
+        display: none;
+    }
+    
+    .fab-tooltip::after {
+        content: '';
+        position: absolute;
+        right: -8px;
+        top: 50%;
+        transform: translateY(-50%);
+        border-left: 8px solid white;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+    }
+    
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    
+    .fab-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: #fc8181;
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 700;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid white;
+    }
+    
+    @media (max-width: 768px) {
+        .fab-button {
+            width: 55px;
+            height: 55px;
+            font-size: 1.5rem;
+        }
+        
+        .fab-tooltip {
+            font-size: 0.75rem;
+            padding: 8px 12px;
+            margin-right: 10px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .steps-container {
+            grid-template-columns: 1fr;
+        }
+        .fab-button {
+            width: 50px;
+            height: 50px;
+            font-size: 1.3rem;
+        }
+        .latest-games-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
 <div class="dashboard-header">
-    <h2>Welcome, Educator {{ current_user.name }}! 👩‍🏫</h2>
+    <h2>Welcome, {{ current_user.name }}! 👩‍🏫</h2>
     <p>You are teaching <strong>Grade {{ educator.grade_teaching }}</strong></p>
+    <p>Manage your students, assign games, and track progress.</p>
 </div>
 
+<!-- ===== 3-STEP PROCESS ===== -->
+<div class="section">
+    <h3><i class="fas fa-route"></i> 3-Step Recommendations Process</h3>
+    <p style="color: #6c757d; margin-bottom: 5px;">Follow these steps to generate personalized recommendations for your learners</p>
+    
+    <div class="steps-container">
+        <!-- STEP 1: View Students -->
+        <div class="step-card active">
+            <div class="step-number">1</div>
+            <span class="step-icon"><i class="fas fa-users"></i></span>
+            <h4>View Students</h4>
+            <p>Browse your students and see their progress at a glance</p>
+            <a href="#all-students" class="step-action primary">
+                <i class="fas fa-arrow-right"></i> View Students
+            </a>
+            <div>
+                <span class="step-status active">In Progress</span>
+            </div>
+        </div>
+        
+        <!-- STEP 2: Analyze Performance -->
+        <div class="step-card">
+            <div class="step-number">2</div>
+            <span class="step-icon"><i class="fas fa-chart-line"></i></span>
+            <h4>Analyze Performance</h4>
+            <p>Review individual student performance data and identify patterns</p>
+            <a href="#student-progress" class="step-action secondary">
+                <i class="fas fa-chart-bar"></i> View Progress
+            </a>
+            <div>
+                <span class="step-status pending">Pending</span>
+            </div>
+        </div>
+        
+        <!-- STEP 3: Generate Recommendations -->
+        <div class="step-card">
+            <div class="step-number">3</div>
+            <span class="step-icon"><i class="fas fa-lightbulb"></i></span>
+            <h4>Generate Recommendations</h4>
+            <p>Get AI-powered recommendations for each learner</p>
+            <a href="#learner-recommendations" class="step-action success">
+                <i class="fas fa-lightbulb"></i> View Recommendations
+            </a>
+            <div>
+                <span class="step-status pending">Pending</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== LATEST GAMES SECTION ===== -->
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <h3>🌟 Latest Games</h3>
+        <a href="{{ url_for('view_latest_game') }}" class="btn-latest">
+            <i class="fas fa-star"></i> View Latest Game
+        </a>
+    </div>
+    
+    {% set latest_games = games|selectattr('is_latest', 'equalto', True)|list %}
+    {% if latest_games %}
+        <div class="latest-games-grid">
+            {% for game in latest_games %}
+            <div class="latest-game-card">
+                <div class="game-title">{{ game.name }}</div>
+                <div class="game-desc">{{ game.description[:60] }}{% if game.description|length > 60 %}...{% endif %}</div>
+                <div class="game-meta">
+                    <span class="tag-latest">⭐ Latest</span>
+                    <span class="tag-date">🕐 {{ game.generated_at.strftime('%Y-%m-%d %H:%M') if game.generated_at else game.created_at.strftime('%Y-%m-%d') }}</span>
+                    <span style="font-size: 0.7rem; color: #718096;">📂 {{ game.category }}</span>
+                </div>
+                <a href="{{ url_for('view_game', game_id=game.id) }}" class="btn-view-game">View Game →</a>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-gamepad" style="font-size: 3rem; color: #cbd5e0; margin-bottom: 10px;"></i>
+            <p style="color: #718096;">No games generated yet.</p>
+            <p style="color: #a0aec0; font-size: 0.9rem;">Click "Generate Game" to create your first game!</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- ===== STATS ===== -->
 <div class="stats-cards">
     <div class="stat-card">
         <h3>{{ learners|length }}</h3>
@@ -153,10 +864,162 @@
     </div>
 </div>
 
+<!-- ===== VIEW ALL STUDENTS BUTTON ===== -->
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+        <h3>👨‍🎓 All Students</h3>
+        <div class="action-buttons">
+            <a href="#all-students" class="view-all-btn">
+                <i class="fas fa-users"></i> View All Students
+            </a>
+            <a href="{{ url_for('ai_generate_game') }}" class="btn-generator">
+                <i class="fas fa-robot"></i> 🤖 Generate Game
+            </a>
+            <a href="{{ url_for('view_latest_game') }}" class="btn-latest">
+                <i class="fas fa-star"></i> ⭐ Latest Game
+            </a>
+            <form action="{{ url_for('logout') }}" method="POST" class="logout-form">
+                <button type="submit" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
 
+<!-- ===== SEARCH STUDENTS ===== -->
+<div class="section" id="all-students">
+    <h3>🔍 Search Students</h3>
+    <div class="search-box">
+        <form method="GET" action="{{ url_for('educator_dashboard') }}" style="display: flex; gap: 10px; flex-wrap: wrap; width: 100%;">
+            <input type="text" name="search" placeholder="Search by name or ID number..." value="{{ search_query or '' }}">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Search
+            </button>
+            {% if search_query %}
+                <a href="{{ url_for('educator_dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            {% endif %}
+        </form>
+    </div>
+</div>
 
+<!-- ===== STUDENTS LIST ===== -->
+<div class="section">
+    <h3>👨‍🎓 Student List</h3>
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Student Name</th>
+                    <th>ID Number</th>
+                    <th>Login Code</th>
+                    <th>Grade</th>
+                    <th>Games Assigned</th>
+                    <th>Games Completed</th>
+                    <th>Average Score</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if learners %}
+                    {% for learner in learners %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><strong>{{ learner.user.name }}</strong></td>
+                        <td>{{ learner.id_number }}</td>
+                        <td>
+                            <span class="learner-login-code">
+                                <i class="fas fa-key"></i> {{ learner.login_code }}
+                            </span>
+                        </td>
+                        <td>Grade {{ learner.grade }}</td>
+                        <td>{{ learner.assignment_count }}</td>
+                        <td>{{ learner.completed_count }}</td>
+                        <td>
+                            {% if learner.avg_score > 0 %}
+                                {{ "%.1f"|format(learner.avg_score) }}%
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if learner.completed_count > 0 %}
+                                {% set pass_rate = (learner.passed_count / learner.completed_count * 100) if learner.completed_count > 0 else 0 %}
+                                {% if pass_rate >= 70 %}
+                                    <span class="badge badge-passed">✅ Good Progress</span>
+                                {% elif pass_rate >= 40 %}
+                                    <span class="badge badge-progress">📈 Needs Practice</span>
+                                {% else %}
+                                    <span class="badge badge-failed">⚠️ Needs Support</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge badge-pending">⏳ Not Started</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('view_learner_progress', learner_id=learner.id) }}" class="btn-secondary btn-small">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="{{ url_for('view_learner_recommendations', learner_id=learner.id) }}" class="btn-secondary btn-small" style="background: #28a745; color: white;">
+                                <i class="fas fa-lightbulb"></i> Recommend
+                            </a>
+                            <a href="{{ url_for('ai_recommendations', learner_id=learner.id) }}" class="btn-ai btn-small">
+                                <i class="fas fa-robot"></i> AI
+                            </a>
+                            <a href="{{ url_for('ai_learning_path', learner_id=learner.id) }}" class="btn-path btn-small">
+                                <i class="fas fa-road"></i> Path
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 30px;">
+                            <div class="empty-state">
+                                <i class="fas fa-users" style="font-size: 3rem; color: #cbd5e0; margin-bottom: 10px;"></i>
+                                <p>No students found.</p>
+                                {% if search_query %}
+                                    <p>Try a different search term or clear the search.</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ===== ASSIGN TEST ===== -->
 <div class="section">
     <h3>📝 Assign New Test</h3>
+    
+    <!-- Latest Game Quick Assign -->
+    {% set latest_game = games|selectattr('is_latest', 'equalto', True)|first %}
+    {% if latest_game %}
+    <div style="background: #f0fff4; border: 2px solid #48bb78; border-radius: 10px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+            <span style="background: #48bb78; color: white; padding: 2px 10px; border-radius: 15px; font-size: 0.7rem; font-weight: 600;">⭐ Latest</span>
+            <span style="font-weight: 600; margin-left: 8px;">{{ latest_game.name }}</span>
+            <span style="font-size: 0.8rem; color: #718096; margin-left: 8px;">{{ latest_game.category }}</span>
+        </div>
+        <a href="{{ url_for('view_game', game_id=latest_game.id) }}" class="btn-primary" style="padding: 5px 15px; font-size: 0.85rem; text-decoration: none;">
+            Assign Latest Game →
+        </a>
+    </div>
+    {% endif %}
+    
+    <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+        <a href="{{ url_for('ai_generate_game') }}" class="btn-generator">
+            <i class="fas fa-robot"></i> 🤖 Create New Game with AI
+        </a>
+        <span style="color: #6c757d; font-size: 0.9rem;">or select from existing games below</span>
+    </div>
+    
     <div class="assign-form">
         <form method="POST" action="{{ url_for('assign_test') }}">
             <div class="form-group">
@@ -173,24 +1036,36 @@
                 <label for="game_id">Select Test/Game:</label>
                 <select name="game_id" id="game_id" required>
                     <option value="">Choose a test</option>
-                    {% for game in games %}
-                    <option value="{{ game.id }}">{{ game.name }} ({{ game.category }})</option>
+                    {% for game in games|sort(attribute='is_latest', reverse=True) %}
+                    <option value="{{ game.id }}">
+                        {% if game.is_latest %}⭐ {% endif %}
+                        {{ game.name }} ({{ game.category }})
+                        {% if game.is_latest %} - Latest!{% endif %}
+                    </option>
                     {% endfor %}
                 </select>
+                {% if games|selectattr('is_latest', 'equalto', True)|list %}
+                    <div style="font-size: 0.8rem; color: #48bb78; margin-top: 5px;">
+                        ⭐ Latest game: {{ games|selectattr('is_latest', 'equalto', True)|list|first|attr('name') }}
+                    </div>
+                {% endif %}
             </div>
             
-            <button type="submit" class="btn btn-primary">Assign Test</button>
+            <button type="submit" class="btn-primary">Assign Test</button>
         </form>
     </div>
 </div>
 
-<div class="section">
-    <h3>Student Progress</h3>
+<!-- ===== STUDENT PROGRESS TABLE ===== -->
+<div class="section" id="student-progress">
+    <h3>📊 Student Progress</h3>
     <div style="overflow-x: auto;">
         <table>
             <thead>
                 <tr>
                     <th>Student Name</th>
+                    <th>ID Number</th>
+                    <th>Login Code</th>
                     <th>Grade</th>
                     <th>Test Name</th>
                     <th>Status</th>
@@ -207,19 +1082,22 @@
                 {% set learner = assignment.learner %}
                 {% set game = assignment.game %}
                 <tr>
-                    <td>{{ learner.user.name }} ({{
-                     learner.id_number }})</td>
+                    <td><strong>{{ learner.user.name }}</strong></td>
+                    <td>{{ learner.id_number }}</td>
+                    <td>
+                        <span class="learner-login-code">{{ learner.login_code }}</span>
+                    </td>
                     <td>Grade {{ learner.grade }}</td>
                     <td>{{ game.name }}</td>
                     <td>
                         {% if assignment.status == 'completed' %}
-                            <span class="badge badge-passed">✓ Completed</span>
+                            <span class="badge badge-passed">✅ Completed</span>
                         {% elif assignment.status == 'in_progress' %}
-                            <span class="badge badge-progress">In Progress</span>
+                            <span class="badge badge-progress">⏳ In Progress</span>
                         {% elif assignment.status == 'expired' %}
-                            <span class="badge badge-failed">Expired</span>
+                            <span class="badge badge-failed">⏰ Expired</span>
                         {% else %}
-                            <span class="badge badge-pending">Pending</span>
+                            <span class="badge badge-pending">📌 Pending</span>
                         {% endif %}
                     </td>
                     <td>
@@ -232,12 +1110,12 @@
                     <td>
                         {% if result %}
                             {% if result.passed %}
-                                <span class="badge badge-passed">✓ Passed</span>
+                                <span class="badge badge-passed">✅ Passed</span>
                             {% else %}
-                                <span class="badge badge-failed">✗ Failed</span>
+                                <span class="badge badge-failed">❌ Failed</span>
                             {% endif %}
                         {% else %}
-                            <span class="badge badge-pending">Not started</span>
+                            <span class="badge badge-pending">⏳ Not started</span>
                         {% endif %}
                     </td>
                     <td>
@@ -249,17 +1127,157 @@
                     </td>
                     <td>
                         {% if result %}
-                            <a href="{{ url_for('test_results', result_id=result.id) }}" class="btn btn-secondary btn-small">View</a>
+                            <a href="{{ url_for('test_results', result_id=result.id) }}" class="btn-secondary btn-small">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="{{ url_for('view_learner_recommendations', learner_id=learner.id) }}" class="btn-secondary btn-small" style="background: #28a745; color: white;">
+                                <i class="fas fa-lightbulb"></i> Recommend
+                            </a>
+                        {% else %}
+                            <span class="badge badge-pending">N/A</span>
                         {% endif %}
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8" style="text-align: center;">No assignments yet. Assign a test to get started!</td>
+                    <td colspan="10" style="text-align: center; padding: 30px;">
+                        <div class="empty-state">
+                            <i class="fas fa-clipboard-list" style="font-size: 3rem; color: #cbd5e0; margin-bottom: 10px;"></i>
+                            <p>No assignments yet. Assign a test to get started!</p>
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<!-- ===== LEARNER RECOMMENDATIONS ===== -->
+<div class="section" id="learner-recommendations">
+    <h3>💡 Learner Recommendations</h3>
+    <p style="color: #6c757d; margin-bottom: 20px;">AI-generated recommendations based on learner performance.</p>
+    
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Grade</th>
+                    <th>Games Completed</th>
+                    <th>Pass Rate</th>
+                    <th>Recommendations</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for learner in learners %}
+                <tr>
+                    <td><strong>{{ learner.user.name }}</strong></td>
+                    <td>Grade {{ learner.grade }}</td>
+                    <td>{{ learner.completed_count }}</td>
+                    <td>
+                        {% if learner.completed_count > 0 %}
+                            {{ "%.0f"|format((learner.passed_count / learner.completed_count * 100)) }}%
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if learner.completed_count > 0 %}
+                            {% set pass_rate = (learner.passed_count / learner.completed_count * 100) if learner.completed_count > 0 else 0 %}
+                            <div class="recommendation-box">
+                                <ul>
+                                    {% if pass_rate >= 80 %}
+                                        <li>🌟 <strong>Excellent progress!</strong> Consider challenging with advanced games.</li>
+                                        <li>📚 Encourage peer tutoring to help other students.</li>
+                                    {% elif pass_rate >= 50 %}
+                                        <li>📈 <strong>Good progress!</strong> Continue practicing to improve scores.</li>
+                                        <li>🎯 Focus on games with lower scores for improvement.</li>
+                                    {% elif pass_rate >= 30 %}
+                                        <li>📖 <strong>Needs practice.</strong> Review basic concepts before advanced games.</li>
+                                        <li>🎮 Try simpler games to build confidence and skills.</li>
+                                    {% else %}
+                                        <li>🤝 <strong>Requires support.</strong> Consider one-on-one assistance.</li>
+                                        <li>📝 Review game instructions and try again with guidance.</li>
+                                    {% endif %}
+                                    <li>🎯 Recommended game: 
+                                        {% if pass_rate >= 70 %}
+                                            Advanced
+                                        {% elif pass_rate >= 40 %}
+                                            Intermediate
+                                        {% else %}
+                                            Beginner
+                                        {% endif %} level
+                                    </li>
+                                </ul>
+                            </div>
+                        {% else %}
+                            <span class="badge badge-pending">No data yet</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 30px;">
+                        <div class="empty-state">
+                            <i class="fas fa-chart-line" style="font-size: 3rem; color: #cbd5e0; margin-bottom: 10px;"></i>
+                            <p>No learner data available for recommendations.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ===== ACTIONS ===== -->
+<div style="text-align: center; margin-top: 30px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+    <a href="{{ url_for('educator_dashboard') }}" class="btn-primary" style="text-decoration: none;">
+        <i class="fas fa-sync"></i> Refresh Dashboard
+    </a>
+    <a href="{{ url_for('ai_generate_game') }}" class="btn-generator" style="text-decoration: none;">
+        <i class="fas fa-robot"></i> 🤖 Generate Game
+    </a>
+    <a href="{{ url_for('view_latest_game') }}" class="btn-latest" style="text-decoration: none;">
+        <i class="fas fa-star"></i> ⭐ Latest Game
+    </a>
+    <form action="{{ url_for('logout') }}" method="POST" class="logout-form">
+        <button type="submit" class="logout-btn">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    </form>
+</div>
+
+<!-- ===== FLOATING AI TEACHING ASSISTANT BUTTON ===== -->
+<div class="fab-container">
+    <div class="fab-tooltip" id="fabTooltip">
+        🤖 Ask AI Teaching Assistant
+    </div>
+    
+    <a href="{{ url_for('educator_ai_chat_page') }}" class="fab-button"
+       onmouseenter="document.getElementById('fabTooltip').style.display='block'"
+       onmouseleave="document.getElementById('fabTooltip').style.display='none'">
+        <span class="pulse-ring"></span>
+        <i class="fas fa-robot"></i>
+        <span class="fab-badge">AI</span>
+    </a>
+</div>
+
+<script>
+    // Show tooltip after 3 seconds for first-time visitors
+    document.addEventListener('DOMContentLoaded', function() {
+        const tooltip = document.getElementById('fabTooltip');
+        if (!localStorage.getItem('fabTooltipShown')) {
+            setTimeout(function() {
+                tooltip.style.display = 'block';
+                setTimeout(function() {
+                    tooltip.style.display = 'none';
+                }, 5000);
+                localStorage.setItem('fabTooltipShown', 'true');
+            }, 3000);
+        }
+    });
+</script>
+
 {% endblock %}

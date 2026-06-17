@@ -38,3 +38,9 @@ venv.bak/
 
 # Logs
 *.log
+
+# .gitignore
+.env
+__pycache__/
+*.pyc
+instance/

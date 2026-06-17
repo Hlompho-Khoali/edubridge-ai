@@ -6,22 +6,31 @@
 <style>
     .login-container {
         max-width: 400px;
-        margin: 0 auto;
-        padding: 20px;
+        margin: 50px auto;
+        padding: 30px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .login-container h2 {
+        text-align: center;
+        color: #667eea;
+        margin-bottom: 30px;
     }
     
     .form-group {
         margin-bottom: 20px;
     }
     
-    label {
+    .form-group label {
         display: block;
         margin-bottom: 5px;
         font-weight: bold;
         color: #333;
     }
     
-    input {
+    .form-group input {
         width: 100%;
         padding: 10px;
         border: 1px solid #ddd;
@@ -29,49 +38,130 @@
         font-size: 1rem;
     }
     
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+    }
+    
     .btn-login {
         width: 100%;
         padding: 12px;
         font-size: 1.1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.2s;
     }
     
-    .register-links {
-        text-align: center;
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .alert {
+        padding: 12px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    
+    .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .alert-info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+    }
+    
+    .register-link-box {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
         margin-top: 20px;
+        text-align: center;
+        border: 1px solid #e9ecef;
     }
     
-    .register-links a {
+    .register-link-box .highlight {
         color: #667eea;
+        font-weight: 600;
+    }
+    
+    .register-link-box .btn-register-link {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 8px 25px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
         text-decoration: none;
-        margin: 0 10px;
+        border-radius: 25px;
+        font-weight: 500;
+        transition: all 0.2s;
     }
     
-    .helper-text {
-        color: #666;
-        font-size: 0.8rem;
-        margin-top: 5px;
-        display: block;
+    .register-link-box .btn-register-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
     }
     
-    .learner-link {
+    .register-link-box .btn-register-link.orange {
+        background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+    }
+    
+    .register-link-box .btn-register-link.orange:hover {
+        box-shadow: 0 5px 15px rgba(237, 137, 54, 0.3);
+    }
+    
+    .forgot-password {
         text-align: center;
         margin-top: 15px;
     }
     
-    .learner-link a {
+    .forgot-password a {
         color: #667eea;
         text-decoration: none;
+    }
+    
+    .forgot-password a:hover {
+        text-decoration: underline;
     }
 </style>
 
 <div class="login-container">
-    <h2 style="text-align: center; color: #667eea; margin-bottom: 30px;">Login to EduBridge</h2>
+    <h2>
+        {% if role == 'parent' %}
+            <i class="fas fa-heart" style="color: #ed8936;"></i> Parent Login
+        {% elif role == 'educator' %}
+            <i class="fas fa-chalkboard-teacher" style="color: #667eea;"></i> Educator Login
+        {% else %}
+            <i class="fas fa-sign-in-alt"></i> Login
+        {% endif %}
+    </h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
     
     <form method="POST">
         <div class="form-group">
-            <label for="email">Email Address</label>
-            <input type="text" id="email" name="email" required placeholder="Enter your email address">
-            <small class="helper-text">Learners can also use their 13-digit ID number</small>
+            <label for="email">Email Address or ID Number</label>
+            <input type="text" id="email" name="email" required placeholder="Enter your email or ID number">
         </div>
         
         <div class="form-group">
@@ -79,17 +169,36 @@
             <input type="password" id="password" name="password" required placeholder="Enter your password">
         </div>
         
-        <button type="submit" class="btn btn-primary btn-login">Login</button>
+        <button type="submit" class="btn-login">Login</button>
     </form>
     
-    <div class="register-links">
-        <p>New to EduBridge?</p>
-        <a href="{{ url_for('register_educator') }}">Register as Educator</a> |
-        <a href="{{ url_for('register_parent') }}">Register as Parent</a>
+    <div class="forgot-password">
+        <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
     </div>
     
-    <div class="learner-link">
-        <a href="{{ url_for('learner_login') }}">Learner Login (6-digit code)</a>
+    <!-- ===== REGISTER LINK BASED ON ROLE ===== -->
+    <div class="register-link-box">
+        {% if role == 'parent' %}
+            <p>Don't have a parent account?</p>
+            <a href="{{ url_for('register_parent') }}" class="btn-register-link orange">
+                <i class="fas fa-user-plus"></i> Register as Parent
+            </a>
+        {% elif role == 'educator' %}
+            <p>Don't have an educator account?</p>
+            <a href="{{ url_for('register_educator') }}" class="btn-register-link">
+                <i class="fas fa-user-plus"></i> Register as Educator
+            </a>
+        {% else %}
+            <p>Don't have an account?</p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px;">
+                <a href="{{ url_for('register_parent') }}" class="btn-register-link orange" style="font-size: 0.9rem; padding: 6px 20px;">
+                    <i class="fas fa-heart"></i> Parent
+                </a>
+                <a href="{{ url_for('register_educator') }}" class="btn-register-link" style="font-size: 0.9rem; padding: 6px 20px;">
+                    <i class="fas fa-chalkboard-teacher"></i> Educator
+                </a>
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

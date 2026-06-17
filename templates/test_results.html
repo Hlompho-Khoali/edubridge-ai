@@ -33,7 +33,7 @@
     }
     
     .score-number {
-        font-size: 3rem;
+        font-size: 2.5rem;
         font-weight: bold;
         color: #333;
     }
@@ -74,6 +74,7 @@
     .detail-card h4 {
         color: #667eea;
         margin-bottom: 10px;
+        font-size: 0.9rem;
     }
     
     .detail-card .value {
@@ -127,9 +128,7 @@
         flex-wrap: wrap;
     }
     
-    .print-btn {
-        background: #6c757d;
-        color: white;
+    .btn {
         padding: 10px 20px;
         border: none;
         border-radius: 5px;
@@ -137,6 +136,52 @@
         text-decoration: none;
         display: inline-block;
         transition: all 0.2s;
+        font-weight: 500;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #5a67d8;
+    }
+    
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: #218838;
+    }
+    
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background: #c82333;
+    }
+    
+    .print-btn {
+        background: #6c757d;
+        color: white;
     }
     
     .print-btn:hover {
@@ -146,21 +191,43 @@
     .pdf-btn {
         background: #dc3545;
         color: white;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-        transition: all 0.2s;
     }
     
     .pdf-btn:hover {
         background: #c82333;
     }
     
+    .share-buttons {
+        text-align: center;
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        font-size: 1.1rem;
+    }
+    
+    .badge-pass {
+        background: #d4edda;
+        color: #155724;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        display: inline-block;
+        font-size: 0.9rem;
+    }
+    
+    .badge-fail {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        display: inline-block;
+        font-size: 0.9rem;
+    }
+    
     @media print {
-        .btn-back, .print-btn, .pdf-btn, .nav-links, .header, .submit-btn {
+        .btn-back, .print-btn, .pdf-btn, .nav-links, .header {
             display: none !important;
         }
         .result-header, .student-info, .detail-card, .review-card {
@@ -179,101 +246,172 @@
             margin: 0;
         }
     }
+    
+    @media (max-width: 768px) {
+        .score-number {
+            font-size: 2rem;
+        }
+        .details-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+        .btn-back {
+            flex-direction: column;
+        }
+        .btn-back .btn {
+            width: 100%;
+            text-align: center;
+        }
+    }
 </style>
 
-{% set questions_list = game.questions|fromjson %}
-{% set user_answers_list = result.answers|default('[]')|fromjson %}
-{% set total_points = questions_list|length * 2 %}
-{% set learner = assignment.learner %}
-{% set educator = assignment.educator %}
+<!-- ===== MAIN CONTENT ===== -->
+{% set questions_list = [] %}
+{% if game and game.questions %}
+    {% set questions_list = game.questions|fromjson %}
+{% endif %}
 
-<div class="result-header {% if result.passed %}passed{% else %}failed{% endif %}">
-    <h2>{{ game.name }}</h2>
-    <p>{{ game.description }}</p>
+{% set user_answers_list = [] %}
+{% if result and result.answers %}
+    {% set user_answers_list = result.answers|fromjson %}
+{% endif %}
+
+{% set total_questions = questions_list|length %}
+{% set total_points = total_questions * 2 %}
+
+<!-- ===== RESULT HEADER ===== -->
+<div class="result-header {% if result and result.passed %}passed{% else %}failed{% endif %}">
+    <h2>{{ game.name if game else 'Unknown Game' }}</h2>
+    <p>{{ game.description if game else '' }}</p>
     
     <div class="score-circle">
-        <div class="score-number">{{ result.score }}/{{ total_points }}</div>
-        <div class="score-percent">{{ "%.1f"|format(result.percentage) }}%</div>
+        <div class="score-number">{{ result.score if result else 0 }}/{{ total_points }}</div>
+        <div class="score-percent">{{ "%.1f"|format(result.percentage) if result else 0 }}%</div>
     </div>
     
     <h3>
-        {% if result.passed %}
-            ✓ Congratulations! You Passed!
+        {% if result and result.passed %}
+            ✅ Congratulations! You Passed!
         {% else %}
-            ✗ Sorry, You Did Not Pass
+            ❌ Sorry, You Did Not Pass
         {% endif %}
     </h3>
     
-    <p>Passing score: 50% ({{ (total_points * 0.5)|int }} out of {{ total_points }} points)</p>
+    {% if result and result.passed %}
+        <span class="badge-pass">✓ PASSED</span>
+    {% elif result %}
+        <span class="badge-fail">✗ FAILED</span>
+    {% endif %}
+    
+    <p style="margin-top: 10px;">Passing score: 50%</p>
 </div>
 
+<!-- ===== STUDENT INFO ===== -->
 <div class="student-info">
-    <h3>Test Information</h3>
-    <p><strong>Student Name:</strong> {{ learner.user.name }}</p>
-    <p><strong>Student ID:</strong> {{ learner.id_number }}</p>
-    <p><strong>Grade:</strong> {{ learner.grade }}</p>
-    <p><strong>Test Assigned By:</strong> {{ educator.user.name }}</p>
-    <p><strong>Completed On:</strong> {{ result.completed_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    <h3>📋 Test Information</h3>
+    <p><strong>Student Name:</strong> {{ learner.user.name if learner and learner.user else 'N/A' }}</p>
+    <p><strong>Student ID:</strong> {{ learner.id_number if learner else 'N/A' }}</p>
+    <p><strong>Grade:</strong> {{ learner.grade if learner else 'N/A' }}</p>
+    <p><strong>Test Assigned By:</strong> {{ educator.user.name if educator and educator.user else 'Teacher' }}</p>
+    <p><strong>Completed On:</strong> {{ result.completed_at.strftime('%Y-%m-%d %H:%M:%S') if result and result.completed_at else 'N/A' }}</p>
 </div>
 
+<!-- ===== DETAILS GRID ===== -->
 <div class="details-grid">
     <div class="detail-card">
-        <h4>Completed Date</h4>
-        <div class="value">{{ result.completed_at.strftime('%Y-%m-%d') }}</div>
+        <h4>📅 Completed Date</h4>
+        <div class="value">{{ result.completed_at.strftime('%Y-%m-%d') if result and result.completed_at else 'N/A' }}</div>
     </div>
     <div class="detail-card">
-        <h4>Correct Answers</h4>
-        <div class="value">{{ result.score // 2 }} / {{ questions_list|length }}</div>
+        <h4>✅ Correct Answers</h4>
+        <div class="value">{{ result.score if result else 0 }} / {{ total_questions }}</div>
     </div>
     <div class="detail-card">
-        <h4>Accuracy</h4>
-        <div class="value">{{ "%.1f"|format((result.score // 2) / questions_list|length * 100) }}%</div>
-    </div>
-    <div class="detail-card">
-        <h4>Category</h4>
-        <div class="value">{{ game.category }}</div>
-    </div>
-</div>
-
-<h3 style="color: #667eea; margin: 30px 0 20px;">Question Review</h3>
-
-<div class="question-review">
-    {% for question in questions_list %}
-    {% set user_answer = user_answers_list[loop.index0] if user_answers_list and loop.index0 < user_answers_list|length else 'Not answered' %}
-    {% set is_correct = user_answer == question.correct %}
-    
-    <div class="review-card {% if is_correct %}correct{% else %}incorrect{% endif %}">
-        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap;">
-            <div style="flex: 1;">
-                <h4>Question {{ loop.index }}: {{ question.question }}</h4>
-                <p><strong>Your Answer:</strong> {{ user_answer }}</p>
-                {% if not is_correct %}
-                <p><strong>Correct Answer:</strong> {{ question.correct }}</p>
-                {% endif %}
-                <p><strong>Points:</strong> {{ question.points }}</p>
-            </div>
-            <div>
-                <span class="answer-status {% if is_correct %}answer-correct{% else %}answer-incorrect{% endif %}">
-                    {% if is_correct %}✓ Correct{% else %}✗ Incorrect{% endif %}
-                </span>
-            </div>
+        <h4>📊 Accuracy</h4>
+        <div class="value">
+            {% if total_questions > 0 %}
+                {{ "%.1f"|format((result.score / total_questions * 100) if result else 0) }}%
+            {% else %}
+                0%
+            {% endif %}
         </div>
     </div>
-    {% endfor %}
+    <div class="detail-card">
+        <h4>📂 Category</h4>
+        <div class="value">{{ game.category if game else 'General' }}</div>
+    </div>
 </div>
 
-<div class="btn-back">
-    <a href="javascript:history.back()" class="btn btn-secondary">Back to Dashboard</a>
-    <a href="{{ url_for('index') }}" class="btn btn-primary">Home</a>
-    <button onclick="window.print()" class="print-btn">Print Results</button>
-    <button onclick="downloadPDF()" class="pdf-btn">Download as PDF</button>
-</div>
+<!-- ===== QUESTION REVIEW ===== -->
+<h3 style="color: #667eea; margin: 30px 0 20px;">📝 Question Review</h3>
 
-<div class="share-buttons" style="text-align: center; margin-top: 20px;">
-    {% if result.passed %}
-    <p>Great job, {{ learner.user.name }}! Keep up the good work!</p>
+<div class="question-review">
+    {% if questions_list and questions_list|length > 0 %}
+        {% for question in questions_list %}
+        {% set user_answer = user_answers_list[loop.index0] if user_answers_list and loop.index0 < user_answers_list|length else 'Not answered' %}
+        {% set is_correct = user_answer == question.get('correct_answer') %}
+        
+        <div class="review-card {% if is_correct %}correct{% else %}incorrect{% endif %}">
+            <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap;">
+                <div style="flex: 1;">
+                    <h4>Question {{ loop.index }}: {{ question.get('question', 'Unknown Question') }}</h4>
+                    <p><strong>Your Answer:</strong> {{ user_answer }}</p>
+                    {% if not is_correct %}
+                    <p><strong>Correct Answer:</strong> {{ question.get('correct_answer', 'N/A') }}</p>
+                    {% endif %}
+                    <p><strong>Points:</strong> {{ question.get('points', 2) }}</p>
+                </div>
+                <div>
+                    <span class="answer-status {% if is_correct %}answer-correct{% else %}answer-incorrect{% endif %}">
+                        {% if is_correct %}✅ Correct{% else %}❌ Incorrect{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     {% else %}
-    <p>Don't give up, {{ learner.user.name }}! Review your answers and try again!</p>
+        <div class="empty-state">
+            <p>No questions available for review.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- ===== BUTTONS ===== -->
+<div class="btn-back">
+    {% if current_user.role == 'learner' %}
+        <a href="{{ url_for('learner_dashboard') }}" class="btn btn-primary">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+    {% elif current_user.role == 'educator' %}
+        <a href="{{ url_for('educator_dashboard') }}" class="btn btn-primary">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+    {% elif current_user.role == 'parent' %}
+        <a href="{{ url_for('parent_dashboard') }}" class="btn btn-primary">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+    {% else %}
+        <a href="{{ url_for('index') }}" class="btn btn-primary">
+            <i class="fas fa-home"></i> Home
+        </a>
+    {% endif %}
+    
+    <button onclick="window.print()" class="btn print-btn">
+        <i class="fas fa-print"></i> Print Results
+    </button>
+    
+    <button onclick="downloadPDF()" class="btn pdf-btn">
+        <i class="fas fa-file-pdf"></i> Download as PDF
+    </button>
+</div>
+
+<!-- ===== MOTIVATIONAL MESSAGE ===== -->
+<div class="share-buttons">
+    {% if result and result.passed %}
+        <p>🌟 Great job, {{ learner.user.name if learner and learner.user else 'Student' }}! 🌟</p>
+        <p>You're making excellent progress! Keep up the good work!</p>
+    {% else %}
+        <p>💪 Don't give up, {{ learner.user.name if learner and learner.user else 'Student' }}! 💪</p>
+        <p>Review your answers, learn from your mistakes, and try again!</p>
     {% endif %}
 </div>
 
@@ -301,5 +439,19 @@
         }
     `;
     document.head.appendChild(style);
+    
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                const closeBtn = alert.querySelector('.btn-close');
+                if (closeBtn) {
+                    closeBtn.click();
+                }
+            });
+        }, 5000);
+    });
 </script>
+
 {% endblock %}

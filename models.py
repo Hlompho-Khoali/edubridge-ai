@@ -83,6 +83,66 @@ class Learner(db.Model):
     games_since_break = db.Column(db.Integer, default=0)
     
     user = db.relationship('User', backref='learner_profile')
+    badges_earned = db.relationship('LearnerBadge', backref='learner_ref', lazy=True)
+    streak_count = db.Column(db.Integer, default=0)
+    last_activity_date = db.Column(db.DateTime, nullable=True)
+    best_streak = db.Column(db.Integer, default=0)
+    
+    @property
+    def current_streak(self):
+        """Calculate current streak"""
+        if not self.last_activity_date:
+            return 0
+        
+        today = datetime.now().date()
+        last_active = self.last_activity_date.date()
+        days_diff = (today - last_active).days
+        
+        if days_diff == 0:
+            return self.streak_count
+        elif days_diff == 1:
+            return self.streak_count
+        else:
+            return 0
+    
+    def update_streak(self):
+        """Update streak when learner completes a game"""
+        today = datetime.now().date()
+        
+        if self.last_activity_date:
+            last_active = self.last_activity_date.date()
+            days_diff = (today - last_active).days
+            
+            if days_diff == 0:
+                # Already played today, no change
+                pass
+            elif days_diff == 1:
+                # Consecutive day
+                self.streak_count += 1
+            else:
+                # Streak broken
+                self.streak_count = 1
+        else:
+            # First activity
+            self.streak_count = 1
+        
+        # Update best streak
+        if self.streak_count > self.best_streak:
+            self.best_streak = self.streak_count
+        
+        self.last_activity_date = datetime.now()
+    
+    @property
+    def badge_count(self):
+        """Get total number of badges earned"""
+        return len(self.badges_earned) if self.badges_earned else 0
+    
+    @property
+    def badges_list(self):
+        """Get list of badges earned"""
+        if self.badges_earned:
+            return [lb.badge for lb in self.badges_earned]
+        return []
 
 class Game(db.Model):
     __tablename__ = 'games'
@@ -95,6 +155,11 @@ class Game(db.Model):
     passing_score = db.Column(db.Integer, default=15)
     time_limit_minutes = db.Column(db.Integer, default=60)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    difficulty = db.Column(db.String(20), default='Intermediate')
+    
+    is_latest = db.Column(db.Boolean, default=False)
+    generated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
     
     def get_questions(self):
         return json.loads(self.questions)
@@ -123,13 +188,14 @@ class TestResult(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     assignment_id = db.Column(db.Integer, db.ForeignKey('test_assignments.id'), nullable=False)
-    score = db.Column(db.Integer, nullable=False)
-    percentage = db.Column(db.Float, nullable=False)
-    passed = db.Column(db.Boolean, nullable=False)
-    answers = db.Column(db.Text, nullable=True)
-    completed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    score = db.Column(db.Integer, nullable=False, default=0)
+    percentage = db.Column(db.Float, nullable=False, default=0.0)
+    passed = db.Column(db.Boolean, nullable=False, default=False)
+    answers = db.Column(db.Text, nullable=True)  # JSON string of answers
+    completed_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
-    assignment = db.relationship('TestAssignment')
+    # Relationships
+    assignment = db.relationship('TestAssignment', backref=db.backref('result', uselist=False))
     
     def get_answers(self):
         return json.loads(self.answers) if self.answers else []
@@ -137,7 +203,7 @@ class TestResult(db.Model):
     def set_answers(self, answers):
         self.answers = json.dumps(answers)
 
-# CognitiveAssessment class - at SAME LEVEL as other classes (NOT inside TestResult)
+# CognitiveAssessment class
 class CognitiveAssessment(db.Model):
     __tablename__ = 'cognitive_assessments'
     
@@ -172,4 +238,35 @@ class CognitiveAssessment(db.Model):
     summary_report = db.Column(db.Text, default='')
     
     learner = db.relationship('Learner', backref='assessments')
+
+# ==================== BADGE MODELS ====================
+
+class Badge(db.Model):
+    __tablename__ = 'badges'
     
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(200), nullable=False)
+    icon = db.Column(db.String(50), nullable=False)
+    condition_type = db.Column(db.String(50))  # 'games_completed', 'perfect_score', 'streak', 'category_master'
+    condition_value = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Badge {self.name}>'
+
+
+class LearnerBadge(db.Model):
+    __tablename__ = 'learner_badges'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    learner_id = db.Column(db.Integer, db.ForeignKey('learners.id'), nullable=False)
+    badge_id = db.Column(db.Integer, db.ForeignKey('badges.id'), nullable=False)
+    earned_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    learner = db.relationship('Learner', backref=db.backref('badges_earned_ref', lazy=True))
+    badge = db.relationship('Badge', backref=db.backref('earned_by', lazy=True))
+    
+    def __repr__(self):
+        return f'<LearnerBadge learner={self.learner_id} badge={self.badge_id}>'

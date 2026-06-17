@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard{% endblock %}
+
+{% block content %}
+<style>
+    .leaderboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    
+    .leaderboard-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .leaderboard-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        background: white;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        transition: all 0.2s;
+    }
+    
+    .leaderboard-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+    }
+    
+    .leaderboard-item .rank {
+        font-size: 1.5rem;
+        font-weight: 700;
+        width: 50px;
+        color: #a0aec0;
+        text-align: center;
+    }
+    
+    .leaderboard-item .rank.gold { color: #f6c445; }
+    .leaderboard-item .rank.silver { color: #c0c0c0; }
+    .leaderboard-item .rank.bronze { color: #cd7f32; }
+    
+    .leaderboard-item .avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #667eea;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-right: 15px;
+    }
+    
+    .leaderboard-item .info {
+        flex: 1;
+    }
+    
+    .leaderboard-item .info .name {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 1.1rem;
+    }
+    
+    .leaderboard-item .info .details {
+        font-size: 0.85rem;
+        color: #718096;
+    }
+    
+    .leaderboard-item .score {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #667eea;
+    }
+    
+    .leaderboard-item .badge-icon {
+        font-size: 1.5rem;
+        margin-left: 10px;
+    }
+    
+    .grade-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .grade-tabs .tab {
+        padding: 8px 20px;
+        border-radius: 20px;
+        border: 2px solid #e2e8f0;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 500;
+        color: #4a5568;
+        text-decoration: none;
+    }
+    
+    .grade-tabs .tab:hover {
+        border-color: #667eea;
+        color: #667eea;
+    }
+    
+    .grade-tabs .tab.active {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+    
+    .empty-state .icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+</style>
+
+<div class="leaderboard-header">
+    <h2>🏆 Leaderboard</h2>
+    <p>See how your students compare with others</p>
+</div>
+
+<div class="leaderboard-container">
+    <!-- Grade Tabs -->
+    <div class="grade-tabs">
+        {% for grade in grades %}
+            <a href="{{ url_for('leaderboard', grade=grade) }}" 
+               class="tab {% if grade == current_grade %}active{% endif %}">
+                Grade {{ grade }}
+            </a>
+        {% endfor %}
+    </div>
+    
+    <!-- Leaderboard -->
+    {% if leaderboard_data %}
+        {% for item in leaderboard_data %}
+        <div class="leaderboard-item">
+            <div class="rank 
+                {% if loop.index == 1 %}gold
+                {% elif loop.index == 2 %}silver
+                {% elif loop.index == 3 %}bronze
+                {% endif %}">
+                #{{ loop.index }}
+            </div>
+            <div class="avatar">
+                {{ item.name[0]|upper }}
+            </div>
+            <div class="info">
+                <div class="name">{{ item.name }}</div>
+                <div class="details">
+                    {% if item.badges %}🏅 {{ item.badges }} badges • {% endif %}
+                    {{ item.games_played }} games played
+                </div>
+            </div>
+            <div class="score">{{ "%.0f"|format(item.avg_score) }}%</div>
+            {% if loop.index <= 3 %}
+                <span class="badge-icon">
+                    {% if loop.index == 1 %}🥇
+                    {% elif loop.index == 2 %}🥈
+                    {% else %}🥉{% endif %}
+                </span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <div class="icon">📊</div>
+            <h4>No Data Available</h4>
+            <p>Complete some games to appear on the leaderboard!</p>
+        </div>
+    {% endif %}
+</div>
+
+<div style="text-align: center; margin-top: 30px;">
+    <a href="{{ url_for('educator_dashboard') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+<style>
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s;
+    }
+    .btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}

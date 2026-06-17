@@ -49,6 +49,7 @@
             display: flex;
             gap: 25px;
             align-items: center;
+            flex-wrap: wrap;
         }
         
         .nav-links a {
@@ -60,6 +61,85 @@
         
         .nav-links a:hover {
             color: #667eea;
+        }
+        
+        /* Dropdown styles */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            min-width: 200px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 8px 0;
+            z-index: 1001;
+        }
+        
+        .dropdown-content a {
+            display: block;
+            padding: 10px 20px;
+            color: #4a5568;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        
+        .dropdown-content a:hover {
+            background: #f7fafc;
+            color: #667eea;
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown .dropbtn {
+            cursor: pointer;
+        }
+        
+        /* Logout button */
+        .logout-form {
+            display: inline;
+        }
+        
+        .logout-form button {
+            background: none;
+            border: none;
+            color: #4a5568;
+            font-weight: 500;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            font-family: inherit;
+            padding: 0;
+        }
+        
+        .logout-form button:hover {
+            color: #667eea;
+        }
+        
+        /* User info */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .user-info .badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
         }
         
         /* Hamburger menu button - hidden on desktop */
@@ -104,6 +184,41 @@
             }
             
             .nav-links a {
+                width: 100%;
+                text-align: center;
+                padding: 10px;
+            }
+            
+            .dropdown {
+                width: 100%;
+            }
+            
+            .dropdown .dropbtn {
+                width: 100%;
+                text-align: center;
+                padding: 10px;
+            }
+            
+            .dropdown-content {
+                position: static;
+                box-shadow: none;
+                padding-left: 20px;
+            }
+            
+            .dropdown-content a {
+                text-align: center;
+            }
+            
+            .user-info {
+                justify-content: center;
+                width: 100%;
+            }
+            
+            .logout-form {
+                width: 100%;
+            }
+            
+            .logout-form button {
                 width: 100%;
                 text-align: center;
                 padding: 10px;
@@ -184,11 +299,63 @@
                 <span></span>
             </button>
             <div class="nav-links" id="navLinks">
-                <a href="{{ url_for('index') }}">Home</a>
-                <a href="{{ url_for('login') }}">Login</a>
-                <a href="{{ url_for('learner_login') }}">Learner Login</a>
-                <a href="{{ url_for('register_educator') }}">Register as Educator</a>
-                <a href="{{ url_for('register_parent') }}">Register as Parent</a>
+                <!-- ===== LOGGED IN USERS ===== -->
+                {% if current_user.is_authenticated %}
+                    
+                    <!-- Home -->
+                    <a href="{{ url_for('index') }}">Home</a>
+                    
+                    <!-- Dashboard based on role -->
+                    {% if current_user.role == 'admin' %}
+                        <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+                    {% elif current_user.role == 'educator' %}
+                        <a href="{{ url_for('educator_dashboard') }}">Dashboard</a>
+                    {% elif current_user.role == 'parent' %}
+                        <a href="{{ url_for('parent_dashboard') }}">Dashboard</a>
+                    {% elif current_user.role == 'learner' %}
+                        <a href="{{ url_for('learner_dashboard') }}">Dashboard</a>
+                    {% endif %}
+                    
+                    <!-- Profile -->
+                    <a href="{{ url_for('view_profile') }}">Profile</a>
+                    
+                    <!-- User Info -->
+                    <span class="user-info">
+                        {{ current_user.name }}
+                        <span class="badge">{{ current_user.role|capitalize }}</span>
+                    </span>
+                    
+                    <!-- Logout -->
+                    <form action="{{ url_for('logout') }}" method="POST" class="logout-form">
+                        <button type="submit">Logout</button>
+                    </form>
+                    
+                <!-- ===== NOT LOGGED IN ===== -->
+                {% else %}
+                    
+                    <!-- Home -->
+                    <a href="{{ url_for('index') }}">Home</a>
+                    
+                    <!-- Login Dropdown -->
+                    <div class="dropdown">
+                        <span class="dropbtn">Login ▾</span>
+                        <div class="dropdown-content">
+                            <a href="{{ url_for('login', role='parent') }}">As Parent</a>
+                            <a href="{{ url_for('login', role='educator') }}">As Educator</a>
+                            <a href="{{ url_for('learner_login') }}">As Learner (Code)</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Register Dropdown -->
+                    <div class="dropdown">
+                        <span class="dropbtn">Register ▾</span>
+                        <div class="dropdown-content">
+                            <a href="{{ url_for('register_parent') }}">As Parent</a>
+                            <a href="{{ url_for('register_educator') }}">As Educator</a>
+                        </div>
+                    </div>
+                    
+                {% endif %}
             </div>
         </div>
     </nav>

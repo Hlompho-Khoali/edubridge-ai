@@ -1,0 +1,503 @@
+{% extends "base.html" %}
+
+{% block title %}AI Game Generator{% endblock %}
+
+{% block content %}
+<style>
+    .generator-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .generator-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #2d3748;
+    }
+    
+    .form-group input, .form-group select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-group input:focus, .form-group select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-group .hint {
+        font-size: 0.8rem;
+        color: #a0aec0;
+        margin-top: 5px;
+    }
+    
+    .btn-generate {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-generate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-generate:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .game-types {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+    
+    .game-type-btn {
+        padding: 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: white;
+    }
+    
+    .game-type-btn:hover {
+        border-color: #667eea;
+        background: #f7faff;
+    }
+    
+    .game-type-btn.selected {
+        border-color: #667eea;
+        background: #e7f3ff;
+    }
+    
+    .game-type-btn .icon {
+        font-size: 1.8rem;
+        display: block;
+        margin-bottom: 5px;
+    }
+    
+    .game-type-btn .name {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #4a5568;
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 40px;
+        display: none;
+    }
+    
+    .loading .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #e2e8f0;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .generated-preview {
+        margin-top: 30px;
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 20px;
+        display: none;
+        border: 2px solid #48bb78;
+    }
+    
+    .generated-preview.show {
+        display: block;
+    }
+    
+    .generated-preview .game-name {
+        color: #2d3748;
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .generated-preview .game-description {
+        color: #718096;
+        margin-bottom: 15px;
+    }
+    
+    .generated-preview .game-meta {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-bottom: 15px;
+    }
+    
+    .generated-preview .game-meta span {
+        background: #edf2f7;
+        padding: 3px 12px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .generated-preview .game-meta .category {
+        background: #bee3f8;
+        color: #2b6cb0;
+    }
+    
+    .generated-preview .game-meta .difficulty-beginner {
+        background: #c6f6d5;
+        color: #276749;
+    }
+    
+    .generated-preview .game-meta .difficulty-intermediate {
+        background: #fefcbf;
+        color: #975a16;
+    }
+    
+    .generated-preview .game-meta .difficulty-advanced {
+        background: #fed7d7;
+        color: #9b2c2c;
+    }
+    
+    .question-preview {
+        background: white;
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .question-preview .q-number {
+        font-weight: 600;
+        color: #667eea;
+        font-size: 0.8rem;
+    }
+    
+    .question-preview .q-text {
+        margin: 3px 0;
+        font-weight: 500;
+    }
+    
+    .question-preview .q-options {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        font-size: 0.85rem;
+        color: #4a5568;
+    }
+    
+    .question-preview .q-options span {
+        background: #edf2f7;
+        padding: 2px 10px;
+        border-radius: 5px;
+    }
+    
+    .question-preview .q-options .correct {
+        background: #c6f6d5;
+        color: #276749;
+        font-weight: 600;
+    }
+    
+    .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary:hover {
+        background: #5a67d8;
+        transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+    
+    .btn-success {
+        background: #48bb78;
+        color: white;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s;
+    }
+    
+    .btn-success:hover {
+        background: #38a169;
+        transform: translateY(-2px);
+    }
+    
+    .example-topics {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+    }
+    
+    .example-topic {
+        background: #f7fafc;
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        color: #4a5568;
+        cursor: pointer;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s;
+    }
+    
+    .example-topic:hover {
+        background: #edf2f7;
+        border-color: #667eea;
+    }
+    
+    @media (max-width: 768px) {
+        .game-types {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .generator-card {
+            padding: 20px;
+        }
+    }
+</style>
+
+<div class="generator-container">
+    <div class="generator-card">
+        <h2 style="color: #667eea; margin-bottom: 5px;">🤖 AI Game Generator</h2>
+        <p style="color: #718096; margin-bottom: 25px;">
+            Describe what kind of educational game you want, and AI will create it instantly!
+        </p>
+        
+        <form id="generateForm" method="POST" action="{{ url_for('ai_generate_game') }}">
+            <!-- Topic -->
+            <div class="form-group">
+                <label for="topic">📚 Topic</label>
+                <input type="text" id="topic" name="topic" required 
+                       placeholder="e.g., Space, Animals, Math, Planets, Fractions..."
+                       value="{{ request.form.get('topic', '') }}">
+                <div class="hint">💡 Try: "Multiplication", "Solar System", "Emotions", "Shapes"</div>
+                <div class="example-topics">
+                    <span class="example-topic" onclick="document.getElementById('topic').value='Space'">🚀 Space</span>
+                    <span class="example-topic" onclick="document.getElementById('topic').value='Animals'">🐘 Animals</span>
+                    <span class="example-topic" onclick="document.getElementById('topic').value='Multiplication'">✖️ Math</span>
+                    <span class="example-topic" onclick="document.getElementById('topic').value='Emotions'">😊 Emotions</span>
+                    <span class="example-topic" onclick="document.getElementById('topic').value='Colors'">🎨 Colors</span>
+                    <span class="example-topic" onclick="document.getElementById('topic').value='Dinosaurs'">🦕 Dinosaurs</span>
+                </div>
+            </div>
+            
+            <!-- Grade -->
+            <div class="form-group">
+                <label for="grade">📊 Grade Level</label>
+                <select id="grade" name="grade">
+                    <option value="1">Grade 1 (Age 6-7)</option>
+                    <option value="2" selected>Grade 2 (Age 7-8)</option>
+                    <option value="3">Grade 3 (Age 8-9)</option>
+                </select>
+            </div>
+            
+            <!-- Game Type -->
+            <div class="form-group">
+                <label>🎯 Game Type</label>
+                <div class="game-types">
+                    <div class="game-type-btn selected" data-type="memory" onclick="selectType(this)">
+                        <span class="icon">🧠</span>
+                        <span class="name">Memory</span>
+                    </div>
+                    <div class="game-type-btn" data-type="math" onclick="selectType(this)">
+                        <span class="icon">🔢</span>
+                        <span class="name">Math</span>
+                    </div>
+                    <div class="game-type-btn" data-type="vocabulary" onclick="selectType(this)">
+                        <span class="icon">📖</span>
+                        <span class="name">Vocabulary</span>
+                    </div>
+                    <div class="game-type-btn" data-type="attention" onclick="selectType(this)">
+                        <span class="icon">👀</span>
+                        <span class="name">Attention</span>
+                    </div>
+                    <div class="game-type-btn" data-type="logic" onclick="selectType(this)">
+                        <span class="icon">🧩</span>
+                        <span class="name">Logic</span>
+                    </div>
+                    <div class="game-type-btn" data-type="default" onclick="selectType(this)">
+                        <span class="icon">🎮</span>
+                        <span class="name">Custom</span>
+                    </div>
+                </div>
+                <input type="hidden" id="game_type" name="game_type" value="memory">
+            </div>
+            
+            <!-- Number of Questions -->
+            <div class="form-group">
+                <label for="num_questions">📝 Number of Questions</label>
+                <select id="num_questions" name="num_questions">
+                    <option value="5">5 questions (10 points)</option>
+                    <option value="10">10 questions (20 points)</option>
+                    <option value="15" selected>15 questions (30 points)</option>
+                    <option value="20">20 questions (40 points)</option>
+                </select>
+            </div>
+            
+            <!-- Submit -->
+            <button type="submit" class="btn-generate" id="generateBtn">
+                🚀 Generate Game
+            </button>
+        </form>
+        
+        <!-- Loading -->
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p style="color: #667eea; font-weight: 600;">🤔 AI is creating your game...</p>
+            <p style="color: #718096; font-size: 0.9rem;">This may take 5-10 seconds</p>
+        </div>
+        
+        <!-- Preview -->
+        <div class="generated-preview" id="gamePreview">
+            <h3 style="color: #667eea; margin-bottom: 5px;">✅ Game Generated!</h3>
+            <div id="previewContent"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectType(el) {
+    document.querySelectorAll('.game-type-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    el.classList.add('selected');
+    document.getElementById('game_type').value = el.dataset.type;
+}
+
+// Show loading on form submit
+document.getElementById('generateForm').addEventListener('submit', function(e) {
+    const btn = document.getElementById('generateBtn');
+    const loading = document.getElementById('loadingIndicator');
+    const preview = document.getElementById('gamePreview');
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Generating...';
+    loading.style.display = 'block';
+    preview.classList.remove('show');
+});
+
+// Check for flash messages with generated game data
+document.addEventListener('DOMContentLoaded', function() {
+    {% if generated_game %}
+        showPreview({{ generated_game|tojson }});
+    {% endif %}
+});
+
+function showPreview(game) {
+    const preview = document.getElementById('gamePreview');
+    const content = document.getElementById('previewContent');
+    
+    let html = `
+        <div class="game-name">🎮 ${game.name}</div>
+        <div class="game-description">${game.description}</div>
+        <div class="game-meta">
+            <span class="category">📂 ${game.category}</span>
+            <span class="difficulty-${game.difficulty}">${game.difficulty.charAt(0).toUpperCase() + game.difficulty.slice(1)}</span>
+            <span>📝 ${game.questions.length} questions</span>
+            <span>⭐ ${game.questions.length * 2} points</span>
+        </div>
+        <h4 style="margin: 15px 0 10px; color: #2d3748;">📋 Questions Preview</h4>
+    `;
+    
+    game.questions.forEach((q, index) => {
+        html += `
+            <div class="question-preview">
+                <div class="q-number">Question ${index + 1}</div>
+                <div class="q-text">${q.question}</div>
+                <div class="q-options">
+                    ${q.options.map(opt => `
+                        <span class="${opt === q.correct ? 'correct' : ''}">${opt}</span>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    });
+    
+    // ✅ FIXED: Only show View Game button if game has an ID
+    {% if generated_game and generated_game.id %}
+        html += `
+            <div class="actions">
+                <a href="{{ url_for('view_game', game_id=generated_game.id) }}" class="btn-success">✅ View Game</a>
+                <a href="{{ url_for('educator_dashboard') }}" class="btn-secondary">← Back to Dashboard</a>
+            </div>
+        `;
+    {% else %}
+        html += `
+            <div class="actions">
+                <a href="{{ url_for('educator_dashboard') }}" class="btn-secondary">← Back to Dashboard</a>
+            </div>
+        `;
+    {% endif %}
+    
+    content.innerHTML = html;
+    preview.classList.add('show');
+}
+</script>
+{% endblock %}

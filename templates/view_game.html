@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+
+{% block title %}{{ game.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .game-detail {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+    }
+    
+    .game-header {
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .game-header .header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .game-header h2 {
+        color: #667eea;
+        margin-bottom: 5px;
+    }
+    
+    .game-header .latest-badge {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        color: white;
+        padding: 5px 18px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        animation: pulse-badge 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-badge {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    
+    .game-header .meta {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    
+    .game-header .meta span {
+        background: #edf2f7;
+        padding: 3px 12px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .game-header .meta .generated-date {
+        background: #e2e8f0;
+        color: #4a5568;
+    }
+    
+    .game-header .meta .category-tag {
+        background: #bee3f8;
+        color: #2b6cb0;
+    }
+    
+    .question-list {
+        margin-top: 20px;
+    }
+    
+    .question-item {
+        background: #f8fafc;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        border-left: 4px solid #667eea;
+        transition: all 0.2s;
+    }
+    
+    .question-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .question-item .q-text {
+        font-weight: 500;
+        margin-bottom: 5px;
+    }
+    
+    .question-item .q-options {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        font-size: 0.9rem;
+    }
+    
+    .question-item .q-options span {
+        background: white;
+        padding: 2px 10px;
+        border-radius: 5px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .question-item .q-options .correct {
+        background: #c6f6d5;
+        border-color: #48bb78;
+        font-weight: 600;
+    }
+    
+    .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary:hover {
+        background: #5a67d8;
+        transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+    
+    .btn-success {
+        background: #48bb78;
+        color: white;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s;
+    }
+    
+    .btn-success:hover {
+        background: #38a169;
+        transform: translateY(-2px);
+    }
+    
+    .btn-warning {
+        background: #ed8936;
+        color: white;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s;
+    }
+    
+    .btn-warning:hover {
+        background: #dd6b20;
+        transform: translateY(-2px);
+    }
+    
+    /* Assignment Modal Styles */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .modal-overlay.active {
+        display: flex;
+    }
+    
+    .modal-content {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .modal-content h3 {
+        color: #667eea;
+        margin-bottom: 20px;
+    }
+    
+    .modal-content .student-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .modal-content .student-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        border-bottom: 1px solid #e8ecf1;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .modal-content .student-item:hover {
+        background: #f7fafc;
+    }
+    
+    .modal-content .student-item input[type="checkbox"] {
+        margin-right: 15px;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+    
+    .modal-content .student-item .info {
+        flex: 1;
+    }
+    
+    .modal-content .student-item .info .name {
+        font-weight: 600;
+        color: #2d3748;
+    }
+    
+    .modal-content .student-item .info .details {
+        font-size: 0.8rem;
+        color: #718096;
+    }
+    
+    .modal-content .form-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+        justify-content: flex-end;
+    }
+    
+    .modal-content .btn-close-modal {
+        background: #6c757d;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    
+    .modal-content .btn-close-modal:hover {
+        background: #5a6268;
+    }
+    
+    .modal-content .btn-assign {
+        background: #48bb78;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    
+    .modal-content .btn-assign:hover {
+        background: #38a169;
+    }
+    
+    .modal-content .select-all {
+        padding: 10px 15px;
+        border-bottom: 1px solid #e8ecf1;
+        display: flex;
+        align-items: center;
+    }
+    
+    .modal-content .select-all input[type="checkbox"] {
+        margin-right: 15px;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+    
+    .modal-content .select-all label {
+        font-weight: 600;
+        cursor: pointer;
+    }
+    
+    .question-count {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 2px 10px;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #2d3748;
+        margin-bottom: 15px;
+    }
+    
+    @media (max-width: 768px) {
+        .game-detail {
+            padding: 20px;
+        }
+        .game-header .header-row {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .modal-content {
+            padding: 20px;
+        }
+        .actions {
+            flex-direction: column;
+        }
+        .actions .btn {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="game-detail">
+    <div class="game-header">
+        <div class="header-row">
+            <h2>🎮 {{ game.name }}</h2>
+            {% if game.is_latest %}
+                <span class="latest-badge">
+                    ⭐ Latest Game
+                </span>
+            {% endif %}
+        </div>
+        <p style="color: #718096; margin-top: 5px;">{{ game.description }}</p>
+        <div class="meta">
+            <span class="category-tag">📂 {{ game.category }}</span>
+            <span class="difficulty-tag">📊 {{ game.difficulty }}</span>
+            <span>📝 {{ questions|length }} questions</span>
+            <span>⭐ {{ questions|length * 2 }} points</span>
+            <span>✅ Pass: 50%</span>
+            <span class="generated-date">🕐 {{ game.generated_at.strftime('%Y-%m-%d %H:%M') if game.generated_at else game.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
+    </div>
+    
+    <div class="section-title">
+        <h3 style="color: #2d3748; margin: 0;">📋 Questions</h3>
+        <span class="question-count">{{ questions|length }} questions</span>
+    </div>
+    
+    <div class="question-list">
+        {% for question in questions %}
+        <div class="question-item">
+            <div class="q-text">Q{{ loop.index }}: {{ question.question }}</div>
+            <div class="q-options">
+                {% for option in question.options %}
+                <span class="{% if option == question.correct %}correct{% endif %}">
+                    {{ option }}
+                    {% if option == question.correct %}✅{% endif %}
+                </span>
+                {% endfor %}
+            </div>
+            <div style="font-size: 0.75rem; color: #718096; margin-top: 5px;">
+                Points: {{ question.points }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="actions">
+        <a href="{{ url_for('educator_dashboard') }}" class="btn-secondary">← Back to Dashboard</a>
+        <a href="{{ url_for('ai_generate_game') }}" class="btn-primary">🤖 Generate Another</a>
+        
+        {% if game.is_latest %}
+            <a href="{{ url_for('view_latest_game') }}" class="btn-warning">
+                ⭐ View Latest Game
+            </a>
+        {% endif %}
+        
+        <button onclick="openAssignModal()" class="btn-success">
+            <i class="fas fa-user-plus"></i> Assign to Students
+        </button>
+        
+        <button onclick="window.print()" class="btn-secondary">🖨️ Print</button>
+    </div>
+</div>
+
+<!-- ===== ASSIGNMENT MODAL ===== -->
+<div class="modal-overlay" id="assignModal">
+    <div class="modal-content">
+        <h3>📋 Assign "{{ game.name }}" to Students</h3>
+        <p style="color: #718096; margin-bottom: 15px;">Select the students you want to assign this game to:</p>
+        
+        <form method="POST" action="{{ url_for('assign_ai_game', game_id=game.id) }}">
+            <div class="select-all">
+                <input type="checkbox" id="selectAll" onclick="toggleAllStudents()">
+                <label for="selectAll">Select All Students</label>
+            </div>
+            
+            <div class="student-list">
+                {% if students %}
+                    {% for student in students %}
+                    <div class="student-item">
+                        <input type="checkbox" name="student_ids" value="{{ student.id }}" id="student_{{ student.id }}">
+                        <div class="info">
+                            <div class="name">{{ student.user.name }}</div>
+                            <div class="details">Grade {{ student.grade }} • ID: {{ student.id_number }}</div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #718096;">
+                            {% if student.completed_count %}
+                                {{ student.completed_count }} games completed
+                            {% else %}
+                                No games yet
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; padding: 30px; color: #718096;">
+                        <p>No students found in your class.</p>
+                        <p>Please add students first.</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-close-modal" onclick="closeAssignModal()">Cancel</button>
+                <button type="submit" class="btn-assign" {% if not students %}disabled{% endif %}>
+                    <i class="fas fa-paper-plane"></i> Assign Game
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openAssignModal() {
+    document.getElementById('assignModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAssignModal() {
+    document.getElementById('assignModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function toggleAllStudents() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('input[name="student_ids"]');
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+}
+
+// Close modal on outside click
+document.getElementById('assignModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeAssignModal();
+    }
+});
+
+// Update select all state when individual checkboxes change
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.name === 'student_ids') {
+        const checkboxes = document.querySelectorAll('input[name="student_ids"]');
+        const selectAll = document.getElementById('selectAll');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        const someChecked = Array.from(checkboxes).some(cb => cb.checked);
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = someChecked && !allChecked;
+    }
+});
+
+// Auto-close alerts after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            const closeBtn = alert.querySelector('.btn-close');
+            if (closeBtn) {
+                closeBtn.click();
+            }
+        });
+    }, 5000);
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}AI Recommendations{% endblock %}
+
+{% block content %}
+<style>
+    .ai-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .ai-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    
+    .ai-header h2 {
+        margin-bottom: 10px;
+    }
+    
+    .ai-header .badge {
+        background: rgba(255,255,255,0.2);
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+    
+    .recommendation-box {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-left: 4px solid #667eea;
+    }
+    
+    .recommendation-box h4 {
+        color: #667eea;
+        margin-bottom: 10px;
+    }
+    
+    .recommendation-box p {
+        color: #4a5568;
+        line-height: 1.6;
+    }
+    
+    .learner-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-box {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .stat-box .number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #667eea;
+    }
+    
+    .stat-box .label {
+        font-size: 0.85rem;
+        color: #718096;
+    }
+    
+    .btn-back {
+        display: inline-block;
+        padding: 10px 25px;
+        background: #6c757d;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+    
+    .btn-back:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+</style>
+
+<div class="ai-container">
+    <div class="ai-header">
+        <h2>🤖 AI Learning Recommendations</h2>
+        <p>Personalized suggestions for {{ learner.user.name }}</p>
+        <span class="badge">Powered by AI</span>
+    </div>
+    
+    <div class="learner-stats">
+        <div class="stat-box">
+            <div class="number">{{ avg_score|round|int }}%</div>
+            <div class="label">Average Score</div>
+        </div>
+        <div class="stat-box">
+            <div class="number">{{ learner.grade }}</div>
+            <div class="label">Grade</div>
+        </div>
+        <div class="stat-box">
+            <div class="number">{{ learner.games_completed or 0 }}</div>
+            <div class="label">Games Completed</div>
+        </div>
+    </div>
+    
+    <div style="background: #f0f7ff; border-radius: 10px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #667eea;">
+        <h4>📊 Learner Profile</h4>
+        <p><strong>Name:</strong> {{ learner.user.name }}</p>
+        <p><strong>Strengths:</strong> {{ learner.strengths or 'Developing skills' }}</p>
+        <p><strong>Areas for Improvement:</strong> {{ learner.weaknesses or 'Continue building skills' }}</p>
+    </div>
+    
+    <h3 style="color: #667eea; margin-bottom: 20px;">📝 Recommendations</h3>
+    
+    <div class="recommendation-box">
+        {% set recs = recommendations.split('\n\n') %}
+        {% for rec in recs %}
+            {% if rec.strip() %}
+                <div style="margin-bottom: 15px;">
+                    <h4>🌟 {{ loop.index }}. {{ rec.split('\n')[0]|trim }}</h4>
+                    <p>{{ rec|replace(rec.split('\n')[0], '')|trim }}</p>
+                </div>
+                {% if not loop.last %}
+                    <hr style="border-color: #e2e8f0; margin: 15px 0;">
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="{{ url_for('view_learner_progress', learner_id=learner.id) }}" class="btn-back">
+            ← Back to Progress
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -84,9 +84,37 @@
         color: white;
     }
     
-    .btn-print {
+    .btn-primary:hover {
+        background: #5a67d8;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+    
+    .btn-success {
         background: #28a745;
         color: white;
+    }
+    
+    .btn-success:hover {
+        background: #218838;
+    }
+    
+    .copy-success {
+        display: none;
+        color: #28a745;
+        margin-top: 10px;
+        font-size: 0.9rem;
+    }
+    
+    .copy-success.show {
+        display: block;
     }
 </style>
 
@@ -110,8 +138,39 @@
     </div>
     
     <div>
-        <button onclick="window.print()" class="btn btn-print">Print Code</button>
+        <button onclick="copyCode()" class="btn btn-success">Copy Code</button>
         <a href="{{ url_for('parent_dashboard') }}" class="btn btn-primary">Done</a>
     </div>
+    
+    <div id="copySuccess" class="copy-success">
+        ✓ Code copied to clipboard!
+    </div>
 </div>
+
+<script>
+    function copyCode() {
+        const code = "{{ login_code }}";
+        navigator.clipboard.writeText(code).then(() => {
+            const successMsg = document.getElementById('copySuccess');
+            successMsg.classList.add('show');
+            setTimeout(() => {
+                successMsg.classList.remove('show');
+            }, 3000);
+        }).catch(() => {
+            // Fallback for older browsers
+            const el = document.createElement('textarea');
+            el.value = code;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            const successMsg = document.getElementById('copySuccess');
+            successMsg.classList.add('show');
+            setTimeout(() => {
+                successMsg.classList.remove('show');
+            }, 3000);
+        });
+    }
+</script>
+
 {% endblock %}
