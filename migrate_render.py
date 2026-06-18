@@ -1,13 +1,10 @@
 # migrate_render.py
 import os
-import sys
 from flask import Flask
 from sqlalchemy import inspect, text
 
-# Create a minimal app just for migration
 app = Flask(__name__)
 
-# Database configuration
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
     if DATABASE_URL.startswith('postgres://'):
@@ -18,55 +15,52 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Import db from models
 from models import db
 db.init_app(app)
 
 def run_migration():
-    """Add missing columns to games table"""
     with app.app_context():
-        try:
-            # Check existing columns
-            inspector = inspect(db.engine)
-            existing_columns = [col['name'] for col in inspector.get_columns('games')]
-            
-            print(f"🔍 Existing columns: {existing_columns}")
-            
-            # Columns to add
-            new_columns = {
-                'grade_level': 'INTEGER DEFAULT 1',
-                'subcategory': 'VARCHAR(50) DEFAULT \'default\'',
-                'accessibility_features': 'TEXT DEFAULT \'{}\'',
-                'visual_style': 'VARCHAR(50) DEFAULT \'default\'',
-                'audio_support': 'BOOLEAN DEFAULT FALSE',
-                'movement_breaks': 'BOOLEAN DEFAULT FALSE',
-                'progress_tracking': 'BOOLEAN DEFAULT TRUE',
-                'max_questions': 'INTEGER DEFAULT 10'
-            }
-            
-            added = []
-            for col_name, col_type in new_columns.items():
-                if col_name not in existing_columns:
-                    try:
-                        db.session.execute(text(f'ALTER TABLE games ADD COLUMN {col_name} {col_type}'))
-                        print(f"✅ Added column: {col_name}")
-                        added.append(col_name)
-                    except Exception as e:
-                        print(f"⚠️ Error adding {col_name}: {e}")
-            
-            db.session.commit()
-            
-            if added:
-                print(f"✅ Migration complete! Added columns: {added}")
-            else:
-                print("✅ All columns already exist!")
-                
-        except Exception as e:
-            print(f"❌ Migration error: {e}")
-            db.session.rollback()
-            sys.exit(1)
+        inspector = inspect(db.engine)
+        
+        # Add columns to games table
+        games_columns = [col['name'] for col in inspector.get_columns('games')]
+        games_new_columns = {
+            'grade_level': 'INTEGER DEFAULT 1',
+            'subcategory': 'VARCHAR(50) DEFAULT \'default\'',
+            'accessibility_features': 'TEXT DEFAULT \'{}\'',
+            'visual_style': 'VARCHAR(50) DEFAULT \'default\'',
+            'audio_support': 'BOOLEAN DEFAULT FALSE',
+            'movement_breaks': 'BOOLEAN DEFAULT FALSE',
+            'progress_tracking': 'BOOLEAN DEFAULT TRUE',
+            'max_questions': 'INTEGER DEFAULT 10'
+        }
+        
+        print("Checking games table...")
+        for col_name, col_type in games_new_columns.items():
+            if col_name not in games_columns:
+                try:
+                    db.session.execute(text(f'ALTER TABLE games ADD COLUMN {col_name} {col_type}'))
+                    print(f"Added column to games: {col_name}")
+                except Exception as e:
+                    print(f"Error adding {col_name} to games: {e}")
+        
+        # Add columns to learners table
+        learners_columns = [col['name'] for col in inspector.get_columns('learners')]
+        learners_new_columns = {
+            'accessibility_preferences': 'TEXT DEFAULT \'{}\''
+        }
+        
+        print("Checking learners table...")
+        for col_name, col_type in learners_new_columns.items():
+            if col_name not in learners_columns:
+                try:
+                    db.session.execute(text(f'ALTER TABLE learners ADD COLUMN {col_name} {col_type}'))
+                    print(f"Added column to learners: {col_name}")
+                except Exception as e:
+                    print(f"Error adding {col_name} to learners: {e}")
+        
+        db.session.commit()
+        print("Migration complete!")
 
 if __name__ == '__main__':
-    print("🚀 Starting migration...")
     run_migration()
-    print("✅ Migration completed successfully!")
