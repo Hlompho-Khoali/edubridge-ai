@@ -1,5 +1,8 @@
+# app.py
 import re
 import os
+import random
+import string
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, redirect, url_for, flash, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -655,37 +658,73 @@ def educator_dashboard():
 @app.route('/educator/assign_test', methods=['POST'])
 @login_required
 def assign_test():
+    """Assign a test to a learner - FIXED: Convert IDs to integers"""
     if current_user.role != 'educator':
         flash('Unauthorized', 'error')
         return redirect(url_for('login'))
     
-    educator = Educator.query.filter_by(user_id=current_user.id).first()
-    learner_id = request.form.get('learner_id')
-    game_id = request.form.get('game_id')
-    
-    if not learner_id or not game_id:
-        flash('Please select both a student and a test.', 'error')
-        return redirect(url_for('educator_dashboard'))
-    
-    existing = TestAssignment.query.filter_by(
-        game_id=game_id,
-        learner_id=learner_id,
-        educator_id=educator.id,
-        status='pending'
-    ).first()
-    
-    if existing:
-        flash('Test already assigned to this student', 'warning')
-    else:
-        assignment = TestAssignment(
+    try:
+        educator = Educator.query.filter_by(user_id=current_user.id).first()
+        if not educator:
+            flash('Educator profile not found.', 'error')
+            return redirect(url_for('educator_dashboard'))
+        
+        # ✅ Convert to integers to fix PostgreSQL type mismatch
+        learner_id = request.form.get('learner_id')
+        game_id = request.form.get('game_id')
+        
+        if not learner_id or not game_id:
+            flash('Please select both a student and a test.', 'error')
+            return redirect(url_for('educator_dashboard'))
+        
+        # Convert to integers
+        learner_id = int(learner_id)
+        game_id = int(game_id)
+        
+        # Verify learner exists and is in educator's grade
+        learner = Learner.query.get(learner_id)
+        if not learner:
+            flash('Student not found.', 'error')
+            return redirect(url_for('educator_dashboard'))
+        
+        if learner.grade != educator.grade_teaching:
+            flash('This student is not in your grade.', 'error')
+            return redirect(url_for('educator_dashboard'))
+        
+        # Verify game exists
+        game = Game.query.get(game_id)
+        if not game:
+            flash('Game not found.', 'error')
+            return redirect(url_for('educator_dashboard'))
+        
+        # Check for existing assignment
+        existing = TestAssignment.query.filter_by(
             game_id=game_id,
-            educator_id=educator.id,
             learner_id=learner_id,
+            educator_id=educator.id,
             status='pending'
-        )
-        db.session.add(assignment)
-        db.session.commit()
-        flash('Test assigned successfully!', 'success')
+        ).first()
+        
+        if existing:
+            flash('Test already assigned to this student', 'warning')
+        else:
+            assignment = TestAssignment(
+                game_id=game_id,
+                educator_id=educator.id,
+                learner_id=learner_id,
+                status='pending'
+            )
+            db.session.add(assignment)
+            db.session.commit()
+            flash('Test assigned successfully!', 'success')
+        
+    except ValueError as e:
+        flash('Invalid student or game selection.', 'error')
+        print(f"ValueError in assign_test: {e}")
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error assigning test: {str(e)}', 'error')
+        print(f"Error in assign_test: {e}")
     
     return redirect(url_for('educator_dashboard'))
 
@@ -1156,8 +1195,6 @@ def parent_add_learner():
         flash('ID number already registered', 'error')
         return redirect(url_for('parent_dashboard'))
     
-    import random
-    import string
     def generate_code():
         return ''.join(random.choices(string.digits, k=6))
     
@@ -1434,56 +1471,79 @@ def view_game(game_id):
 @app.route('/game/assign/<int:game_id>', methods=['POST'])
 @login_required
 def assign_ai_game(game_id):
-    """Assign an AI-generated game to selected students"""
+    """Assign an AI-generated game to selected students - FIXED: Convert IDs to integers"""
     if current_user.role != 'educator':
         flash('Access denied.', 'error')
         return redirect(url_for('index'))
     
-    educator = Educator.query.filter_by(user_id=current_user.id).first()
-    if not educator:
-        flash('Educator profile not found.', 'error')
-        return redirect(url_for('educator_dashboard'))
-    
-    game = Game.query.get_or_404(game_id)
-    
-    # Get selected student IDs
-    student_ids = request.form.getlist('student_ids')
-    
-    if not student_ids:
-        flash('Please select at least one student.', 'warning')
-        return redirect(url_for('view_game', game_id=game_id))
-    
-    assigned_count = 0
-    already_assigned = 0
-    
-    for student_id in student_ids:
-        # Check if already assigned
-        existing = TestAssignment.query.filter_by(
-            game_id=game.id,
-            learner_id=student_id,
-            educator_id=educator.id,
-            status='pending'
-        ).first()
+    try:
+        educator = Educator.query.filter_by(user_id=current_user.id).first()
+        if not educator:
+            flash('Educator profile not found.', 'error')
+            return redirect(url_for('educator_dashboard'))
         
-        if existing:
-            already_assigned += 1
-            continue
+        game = Game.query.get_or_404(game_id)
         
-        # Create assignment
-        assignment = TestAssignment(
-            game_id=game.id,
-            learner_id=student_id,
-            educator_id=educator.id,
-            status='pending'
-        )
-        db.session.add(assignment)
-        assigned_count += 1
-    
-    db.session.commit()
-    
-    flash(f'✅ Game "{game.name}" assigned to {assigned_count} student(s)!', 'success')
-    if already_assigned > 0:
-        flash(f'⚠️ {already_assigned} student(s) already had this game assigned.', 'info')
+        # Get selected student IDs and convert to integers
+        student_ids = request.form.getlist('student_ids')
+        
+        if not student_ids:
+            flash('Please select at least one student.', 'warning')
+            return redirect(url_for('view_game', game_id=game_id))
+        
+        # ✅ Convert to integers
+        student_ids = [int(id) for id in student_ids if id]
+        
+        assigned_count = 0
+        already_assigned = 0
+        
+        for student_id in student_ids:
+            # Verify student exists and is in educator's grade
+            learner = Learner.query.get(student_id)
+            if not learner:
+                continue
+            
+            if learner.grade != educator.grade_teaching:
+                continue
+            
+            # Check if already assigned
+            existing = TestAssignment.query.filter_by(
+                game_id=game.id,
+                learner_id=student_id,
+                educator_id=educator.id,
+                status='pending'
+            ).first()
+            
+            if existing:
+                already_assigned += 1
+                continue
+            
+            # Create assignment
+            assignment = TestAssignment(
+                game_id=game.id,
+                learner_id=student_id,
+                educator_id=educator.id,
+                status='pending'
+            )
+            db.session.add(assignment)
+            assigned_count += 1
+        
+        db.session.commit()
+        
+        if assigned_count > 0:
+            flash(f'✅ Game "{game.name}" assigned to {assigned_count} student(s)!', 'success')
+        if already_assigned > 0:
+            flash(f'⚠️ {already_assigned} student(s) already had this game assigned.', 'info')
+        if assigned_count == 0 and already_assigned == 0:
+            flash('No students were assigned. Please select valid students.', 'warning')
+        
+    except ValueError as e:
+        flash('Invalid student selection.', 'error')
+        print(f"ValueError in assign_ai_game: {e}")
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error assigning game: {str(e)}', 'error')
+        print(f"Error in assign_ai_game: {e}")
     
     return redirect(url_for('view_game', game_id=game_id))
 
