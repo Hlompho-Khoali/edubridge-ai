@@ -6,7 +6,7 @@ import string
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, redirect, url_for, flash, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from models import db, User, Admin, Educator, Parent, Learner, Game, TestAssignment, TestResult, CognitiveAssessment
+from models import db, User, Admin, Educator, Parent, Learner, Game, TestAssignment, TestResult, CognitiveAssessment, LearnerBadge
 from utils.games_data import get_all_games
 from utils.validators import validate_rsa_id, calculate_age, validate_learner_age, determine_grade_from_age
 from datetime import datetime
