@@ -1,0 +1,206 @@
+<!-- templates/assign_test_disability.html -->
+{% extends "base.html" %}
+
+{% block title %}Assign Disability-Specific Test{% endblock %}
+
+{% block content %}
+<style>
+    .disability-banner {
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .disability-banner.adhd {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+    }
+    
+    .disability-banner.dyslexia {
+        background: #d1ecf1;
+        border-left: 4px solid #17a2b8;
+    }
+    
+    .disability-banner.cognitive_pace {
+        background: #e2e3e5;
+        border-left: 4px solid #6c757d;
+    }
+    
+    .disability-banner.none {
+        background: #d4edda;
+        border-left: 4px solid #28a745;
+    }
+    
+    .feature-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .feature-list li {
+        padding: 8px 12px;
+        margin-bottom: 5px;
+        background: #f8f9fa;
+        border-radius: 5px;
+        border-left: 3px solid #667eea;
+    }
+    
+    .feature-list li:before {
+        content: "✓ ";
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .tips-box {
+        background: #f0f7ff;
+        border-radius: 10px;
+        padding: 15px 20px;
+        margin: 15px 0;
+        border-left: 4px solid #667eea;
+    }
+    
+    .tips-box ul {
+        margin: 10px 0 0 20px;
+    }
+    
+    .tips-box li {
+        margin-bottom: 5px;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Assign Disability-Specific Test</h3>
+                    <p><strong>Student:</strong> {{ learner.user.name }}</p>
+                    <p><strong>Grade:</strong> {{ learner.grade }}</p>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Disability Banner -->
+                    {% set disability_labels = {
+                        'adhd': 'ADHD Support',
+                        'dyslexia': 'Dyslexia Support',
+                        'cognitive_pace': 'Cognitive Pace Support',
+                        'none': 'No Specific Disability'
+                    } %}
+                    {% set disability_class = learner.disability_type or 'none' %}
+                    
+                    <div class="disability-banner {{ disability_class }}">
+                        <h5>
+                            {% if learner.disability_type == 'adhd' %}
+                                🧠 ADHD Support
+                            {% elif learner.disability_type == 'dyslexia' %}
+                                📖 Dyslexia Support
+                            {% elif learner.disability_type == 'cognitive_pace' %}
+                                ⏳ Cognitive Pace Support
+                            {% else %}
+                                ✅ Standard Learning
+                            {% endif %}
+                        </h5>
+                        <p style="margin-bottom: 0;">
+                            {% if learner.disability_type == 'adhd' %}
+                                Games designed with short rounds, visual rewards, and movement breaks.
+                            {% elif learner.disability_type == 'dyslexia' %}
+                                Games with read-aloud, large fonts, and audio support.
+                            {% elif learner.disability_type == 'cognitive_pace' %}
+                                Games with adjustable speed and step-by-step instructions.
+                            {% else %}
+                                Standard games for all learners.
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <!-- Features -->
+                    {% if features %}
+                    <div class="mt-3">
+                        <h5>Features Included:</h5>
+                        <ul class="feature-list">
+                            {% for key, value in features.items() %}
+                                {% if value and key != 'tips' %}
+                                <li>{{ key|replace('_', ' ')|capitalize }}</li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Tips -->
+                    {% if tips %}
+                    <div class="tips-box">
+                        <h5>💡 Tips for Success:</h5>
+                        <ul>
+                            {% for tip in tips %}
+                            <li>{{ tip }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Assignment Form -->
+                    <form method="POST" action="{{ url_for('assign_disability_test') }}">
+                        <input type="hidden" name="learner_id" value="{{ learner.id }}">
+                        
+                        <div class="form-group">
+                            <label for="topic">Topic</label>
+                            <input type="text" class="form-control" id="topic" name="topic" 
+                                   placeholder="e.g., Space, Animals, Math, Colors" required>
+                            <small class="form-text text-muted">Enter a topic for the game</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="game_type">Game Type</label>
+                            <select class="form-control" id="game_type" name="game_type">
+                                <option value="memory">Memory</option>
+                                <option value="attention">Attention</option>
+                                <option value="language">Language</option>
+                                <option value="math">Math</option>
+                                <option value="sensory">Sensory</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                {% if learner.disability_type == 'adhd' %}
+                                    Recommended: Attention or Memory games
+                                {% elif learner.disability_type == 'dyslexia' %}
+                                    Recommended: Language or Memory games
+                                {% elif learner.disability_type == 'cognitive_pace' %}
+                                    Recommended: Math or Memory games
+                                {% else %}
+                                    Any game type works
+                                {% endif %}
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="num_questions">Number of Questions</label>
+                            <select class="form-control" id="num_questions" name="num_questions">
+                                <option value="5">5 questions</option>
+                                <option value="10" selected>10 questions</option>
+                                <option value="15">15 questions</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                {% if learner.disability_type == 'adhd' %}
+                                    Recommended: 5 questions for ADHD support
+                                {% elif learner.disability_type == 'dyslexia' %}
+                                    Recommended: 8-10 questions
+                                {% elif learner.disability_type == 'cognitive_pace' %}
+                                    Recommended: 6 questions
+                                {% endif %}
+                            </small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-block">Generate and Assign Game</button>
+                    </form>
+                    
+                    <!-- Back Button -->
+                    <div class="mt-3 text-center">
+                        <a href="{{ url_for('educator_dashboard') }}" class="btn btn-secondary">
+                            Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
