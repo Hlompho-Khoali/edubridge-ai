@@ -226,6 +226,15 @@
         font-size: 0.9rem;
     }
     
+    .correct-answer-text {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .wrong-answer-text {
+        color: #dc3545;
+    }
+    
     @media print {
         .btn-back, .print-btn, .pdf-btn, .nav-links, .header {
             display: none !important;
@@ -264,42 +273,28 @@
     }
 </style>
 
-<!-- ===== MAIN CONTENT ===== -->
-{% set questions_list = [] %}
-{% if game and game.questions %}
-    {% set questions_list = game.questions|fromjson %}
-{% endif %}
-
-{% set user_answers_list = [] %}
-{% if result and result.answers %}
-    {% set user_answers_list = result.answers|fromjson %}
-{% endif %}
-
-{% set total_questions = questions_list|length %}
-{% set total_points = total_questions * 2 %}
-
 <!-- ===== RESULT HEADER ===== -->
 <div class="result-header {% if result and result.passed %}passed{% else %}failed{% endif %}">
     <h2>{{ game.name if game else 'Unknown Game' }}</h2>
     <p>{{ game.description if game else '' }}</p>
     
     <div class="score-circle">
-        <div class="score-number">{{ result.score if result else 0 }}/{{ total_points }}</div>
+        <div class="score-number">{{ result.score if result else 0 }}/{{ total_questions * 2 }}</div>
         <div class="score-percent">{{ "%.1f"|format(result.percentage) if result else 0 }}%</div>
     </div>
     
     <h3>
         {% if result and result.passed %}
-            ✅ Congratulations! You Passed!
+            Congratulations! You Passed!
         {% else %}
-            ❌ Sorry, You Did Not Pass
+            Sorry, You Did Not Pass
         {% endif %}
     </h3>
     
     {% if result and result.passed %}
-        <span class="badge-pass">✓ PASSED</span>
+        <span class="badge-pass">PASSED</span>
     {% elif result %}
-        <span class="badge-fail">✗ FAILED</span>
+        <span class="badge-fail">FAILED</span>
     {% endif %}
     
     <p style="margin-top: 10px;">Passing score: 50%</p>
@@ -307,7 +302,7 @@
 
 <!-- ===== STUDENT INFO ===== -->
 <div class="student-info">
-    <h3>📋 Test Information</h3>
+    <h3>Test Information</h3>
     <p><strong>Student Name:</strong> {{ learner.user.name if learner and learner.user else 'N/A' }}</p>
     <p><strong>Student ID:</strong> {{ learner.id_number if learner else 'N/A' }}</p>
     <p><strong>Grade:</strong> {{ learner.grade if learner else 'N/A' }}</p>
@@ -318,15 +313,15 @@
 <!-- ===== DETAILS GRID ===== -->
 <div class="details-grid">
     <div class="detail-card">
-        <h4>📅 Completed Date</h4>
+        <h4>Completed Date</h4>
         <div class="value">{{ result.completed_at.strftime('%Y-%m-%d') if result and result.completed_at else 'N/A' }}</div>
     </div>
     <div class="detail-card">
-        <h4>✅ Correct Answers</h4>
+        <h4>Correct Answers</h4>
         <div class="value">{{ result.score if result else 0 }} / {{ total_questions }}</div>
     </div>
     <div class="detail-card">
-        <h4>📊 Accuracy</h4>
+        <h4>Accuracy</h4>
         <div class="value">
             {% if total_questions > 0 %}
                 {{ "%.1f"|format((result.score / total_questions * 100) if result else 0) }}%
@@ -336,33 +331,36 @@
         </div>
     </div>
     <div class="detail-card">
-        <h4>📂 Category</h4>
+        <h4>Category</h4>
         <div class="value">{{ game.category if game else 'General' }}</div>
     </div>
 </div>
 
 <!-- ===== QUESTION REVIEW ===== -->
-<h3 style="color: #667eea; margin: 30px 0 20px;">📝 Question Review</h3>
+<h3 style="color: #667eea; margin: 30px 0 20px;">Question Review</h3>
 
 <div class="question-review">
-    {% if questions_list and questions_list|length > 0 %}
-        {% for question in questions_list %}
-        {% set user_answer = user_answers_list[loop.index0] if user_answers_list and loop.index0 < user_answers_list|length else 'Not answered' %}
-        {% set is_correct = user_answer == question.get('correct_answer') %}
-        
-        <div class="review-card {% if is_correct %}correct{% else %}incorrect{% endif %}">
+    {% if question_review and question_review|length > 0 %}
+        {% for review in question_review %}
+        <div class="review-card {% if review.is_correct %}correct{% else %}incorrect{% endif %}">
             <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap;">
                 <div style="flex: 1;">
-                    <h4>Question {{ loop.index }}: {{ question.get('question', 'Unknown Question') }}</h4>
-                    <p><strong>Your Answer:</strong> {{ user_answer }}</p>
-                    {% if not is_correct %}
-                    <p><strong>Correct Answer:</strong> {{ question.get('correct_answer', 'N/A') }}</p>
-                    {% endif %}
-                    <p><strong>Points:</strong> {{ question.get('points', 2) }}</p>
+                    <h4>Question {{ review.number }}: {{ review.question }}</h4>
+                    <p><strong>Your Answer:</strong> 
+                        <span class="{% if review.is_correct %}correct-answer-text{% else %}wrong-answer-text{% endif %}">
+                            {{ review.user_answer }}
+                        </span>
+                    </p>
+                    <p><strong>Correct Answer:</strong> 
+                        <span class="correct-answer-text">
+                            {{ review.correct_answer }}
+                        </span>
+                    </p>
+                    <p><strong>Points:</strong> {{ review.points }}</p>
                 </div>
                 <div>
-                    <span class="answer-status {% if is_correct %}answer-correct{% else %}answer-incorrect{% endif %}">
-                        {% if is_correct %}✅ Correct{% else %}❌ Incorrect{% endif %}
+                    <span class="answer-status {% if review.is_correct %}answer-correct{% else %}answer-incorrect{% endif %}">
+                        {% if review.is_correct %}Correct{% else %}Incorrect{% endif %}
                     </span>
                 </div>
             </div>
@@ -379,49 +377,47 @@
 <div class="btn-back">
     {% if current_user.role == 'learner' %}
         <a href="{{ url_for('learner_dashboard') }}" class="btn btn-primary">
-            <i class="fas fa-tachometer-alt"></i> Dashboard
+            Dashboard
         </a>
     {% elif current_user.role == 'educator' %}
         <a href="{{ url_for('educator_dashboard') }}" class="btn btn-primary">
-            <i class="fas fa-tachometer-alt"></i> Dashboard
+            Dashboard
         </a>
     {% elif current_user.role == 'parent' %}
         <a href="{{ url_for('parent_dashboard') }}" class="btn btn-primary">
-            <i class="fas fa-tachometer-alt"></i> Dashboard
+            Dashboard
         </a>
     {% else %}
         <a href="{{ url_for('index') }}" class="btn btn-primary">
-            <i class="fas fa-home"></i> Home
+            Home
         </a>
     {% endif %}
     
     <button onclick="window.print()" class="btn print-btn">
-        <i class="fas fa-print"></i> Print Results
+        Print Results
     </button>
     
     <button onclick="downloadPDF()" class="btn pdf-btn">
-        <i class="fas fa-file-pdf"></i> Download as PDF
+        Download as PDF
     </button>
 </div>
 
 <!-- ===== MOTIVATIONAL MESSAGE ===== -->
 <div class="share-buttons">
     {% if result and result.passed %}
-        <p>🌟 Great job, {{ learner.user.name if learner and learner.user else 'Student' }}! 🌟</p>
+        <p>Great job, {{ learner.user.name if learner and learner.user else 'Student' }}!</p>
         <p>You're making excellent progress! Keep up the good work!</p>
     {% else %}
-        <p>💪 Don't give up, {{ learner.user.name if learner and learner.user else 'Student' }}! 💪</p>
+        <p>Don't give up, {{ learner.user.name if learner and learner.user else 'Student' }}!</p>
         <p>Review your answers, learn from your mistakes, and try again!</p>
     {% endif %}
 </div>
 
 <script>
     function downloadPDF() {
-        // Show print dialog which allows saving as PDF
         window.print();
     }
     
-    // Add watermark for PDF
     const style = document.createElement('style');
     style.textContent = `
         @media print {
@@ -440,7 +436,6 @@
     `;
     document.head.appendChild(style);
     
-    // Auto-hide alerts after 5 seconds
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(function() {
             const alerts = document.querySelectorAll('.alert');
