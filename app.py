@@ -599,40 +599,65 @@ def admin_delete_user(user_id):
         if user.role == 'learner':
             learner = Learner.query.filter_by(user_id=user.id).first()
             if learner:
+                # Delete learner badges
+                LearnerBadge.query.filter_by(learner_id=learner.id).delete()
+                
+                # Delete assignments and results
                 assignments = TestAssignment.query.filter_by(learner_id=learner.id).all()
                 for assignment in assignments:
                     TestResult.query.filter_by(assignment_id=assignment.id).delete()
                     db.session.delete(assignment)
+                
+                # Delete cognitive assessments
+                CognitiveAssessment.query.filter_by(learner_id=learner.id).delete()
+                
                 db.session.delete(learner)
+                
         elif user.role == 'parent':
             parent = Parent.query.filter_by(user_id=user.id).first()
             if parent:
+                # Get all learners under this parent
                 learners = Learner.query.filter_by(parent_id=parent.id).all()
+                
                 for learner in learners:
+                    # 1. Delete learner badges FIRST
+                    LearnerBadge.query.filter_by(learner_id=learner.id).delete()
+                    
+                    # 2. Delete test results and assignments
                     assignments = TestAssignment.query.filter_by(learner_id=learner.id).all()
                     for assignment in assignments:
                         TestResult.query.filter_by(assignment_id=assignment.id).delete()
                         db.session.delete(assignment)
+                    
+                    # 3. Delete cognitive assessments
+                    CognitiveAssessment.query.filter_by(learner_id=learner.id).delete()
+                    
+                    # 4. Delete the learner
                     db.session.delete(learner)
+                
+                # 5. Delete the parent
                 db.session.delete(parent)
+                
         elif user.role == 'educator':
             educator = Educator.query.filter_by(user_id=user.id).first()
             if educator:
                 assignments = TestAssignment.query.filter_by(educator_id=educator.id).all()
                 for assignment in assignments:
+                    TestResult.query.filter_by(assignment_id=assignment.id).delete()
                     db.session.delete(assignment)
                 db.session.delete(educator)
         
+        # Finally, delete the user
         db.session.delete(user)
         db.session.commit()
-        flash(f'User {user.name} deleted', 'success')
+        flash(f'User {user.name} deleted successfully', 'success')
         
     except Exception as e:
         db.session.rollback()
         flash(f'Error: {str(e)}', 'error')
+        print(f"Delete error: {e}")
     
     return redirect(url_for('admin_users'))
-
 @app.route('/admin/wipe-games')
 @login_required
 def admin_wipe_games():
@@ -802,8 +827,10 @@ def assess_learner(learner_id):
         flash('You do not have access to this learner.', 'error')
         return redirect(url_for('educator_dashboard'))
     
+    # Import the cognitive assessment service
     from utils.cognitive_assessment import CognitiveAssessmentService
     
+    # This calls the detection code
     assessment = CognitiveAssessmentService.analyze_learner_performance(learner.id)
     
     if not assessment:
