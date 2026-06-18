@@ -1653,6 +1653,47 @@ def ai_analysis():
     
     return render_template('ai_analysis.html', learner=learner, analysis=analysis)
 
+# app.py - Add this right after db.create_all()
+def run_migrations():
+    """Check and add missing columns on startup"""
+    try:
+        from sqlalchemy import inspect, text
+        
+        inspector = inspect(db.engine)
+        existing_columns = [col['name'] for col in inspector.get_columns('games')]
+        
+        if 'grade_level' not in existing_columns:
+            print("Running database migration...")
+            new_columns = {
+                'grade_level': 'INTEGER DEFAULT 1',
+                'subcategory': 'VARCHAR(50) DEFAULT \'default\'',
+                'accessibility_features': 'TEXT DEFAULT \'{}\'',
+                'visual_style': 'VARCHAR(50) DEFAULT \'default\'',
+                'audio_support': 'BOOLEAN DEFAULT FALSE',
+                'movement_breaks': 'BOOLEAN DEFAULT FALSE',
+                'progress_tracking': 'BOOLEAN DEFAULT TRUE',
+                'max_questions': 'INTEGER DEFAULT 10'
+            }
+            
+            for col_name, col_type in new_columns.items():
+                if col_name not in existing_columns:
+                    db.session.execute(text(f'ALTER TABLE games ADD COLUMN {col_name} {col_type}'))
+                    print(f"Added column: {col_name}")
+            
+            db.session.commit()
+            print("Migration completed successfully!")
+    except Exception as e:
+        print(f"Migration warning: {e}")
+
+# Then in your app initialization:
+with app.app_context():
+    db.create_all()
+    print("Database tables created/verified")
+    
+    # Run migrations
+    run_migrations()
+    
+    # Rest of your initialization...
 # ==================== GAME ROUTES ====================
 
 @app.route('/game/penguin-says')
