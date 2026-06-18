@@ -497,12 +497,8 @@
                         </td>
                         <td>
                             <a href="{{ url_for('view_learner_progress', learner_id=learner.id) }}" class="btn-secondary btn-small">View</a>
-                            <!-- ===== THE EVALUATE BUTTON ===== -->
                             <a href="{{ url_for('assess_learner', learner_id=learner.id) }}" class="btn-assess btn-small">Evaluate</a>
-                            <a href="{{ url_for('assign_test_for_learner', learner_id=learner.id) }}" class="btn-primary btn-small">Assign</a>
                             <a href="{{ url_for('view_learner_recommendations', learner_id=learner.id) }}" class="btn-success btn-small">Recommend</a>
-                            <a href="{{ url_for('ai_recommendations', learner_id=learner.id) }}" class="btn-ai btn-small">AI</a>
-                            <a href="{{ url_for('ai_learning_path', learner_id=learner.id) }}" class="btn-path btn-small">Path</a>
                         </td>
                     </tr>
                     {% endfor %}

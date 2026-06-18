@@ -8,6 +8,7 @@ from flask import Flask, jsonify, render_template, request, redirect, url_for, f
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models import db, User, Admin, Educator, Parent, Learner, Game, TestAssignment, TestResult, CognitiveAssessment, LearnerBadge
 from utils.games_data import get_all_games
+from utils.cognitive_assessment import CognitiveAssessmentService
 from utils.validators import validate_rsa_id, calculate_age, validate_learner_age, determine_grade_from_age
 from datetime import datetime
 import json
@@ -812,6 +813,8 @@ def assign_test():
 
 # ==================== ASSESSMENT ROUTES ====================
 
+# ==================== ASSESSMENT ROUTES ====================
+
 @app.route('/educator/assess-learner/<int:learner_id>')
 @login_required
 def assess_learner(learner_id):
@@ -827,21 +830,17 @@ def assess_learner(learner_id):
         flash('You do not have access to this learner.', 'error')
         return redirect(url_for('educator_dashboard'))
     
-    # Import the cognitive assessment service
-    from utils.cognitive_assessment import CognitiveAssessmentService
-    
-    # This calls the detection code
-    assessment = CognitiveAssessmentService.analyze_learner_performance(learner.id)
-    
-    if not assessment:
-        flash('Need at least 3 completed games for assessment.', 'warning')
-        return redirect(url_for('educator_dashboard'))
-    
-    return render_template('assessment_results.html',
-                         learner=learner,
-                         assessment=assessment)
-
-
+    try:
+        from utils.cognitive_assessment import CognitiveAssessmentService
+        
+        assessment = CognitiveAssessmentService.analyze_learner_performance(learner.id)
+        
+        if not assessment:
+            flash('Need at least 3 completed games for assessment.', 'warning')
+            return redirect(url_for('educator_dashboard'))
+        
+        if assessment.get('status') == 'insufficient_data':
+            flash
 @app.route('/educator/run-assessment/<int:learner_id>')
 @login_required
 def run_assessment(learner_id):
