@@ -1,140 +1,155 @@
 # utils/badges.py
-from models import db, Badge, LearnerBadge
+from models import db, User, Badge, LearnerBadge, TestAssignment, TestResult
+from datetime import datetime
 
 class BadgeService:
-    """Badge and achievement service"""
+    """Service for managing badges and achievements"""
     
     @staticmethod
     def initialize_badges():
-        """Create default badges if they don't exist"""
-        badges = [
-            {'name': '🌟 First Game', 'description': 'Completed your first game!', 'icon': '🎮', 'condition_type': 'games_completed', 'condition_value': 1},
-            {'name': '⭐ Perfect Score', 'description': 'Got 100% on a game!', 'icon': '💯', 'condition_type': 'perfect_score', 'condition_value': 1},
-            {'name': '🏅 5 Games', 'description': 'Completed 5 games', 'icon': '🎯', 'condition_type': 'games_completed', 'condition_value': 5},
-            {'name': '🏆 10 Games', 'description': 'Completed 10 games', 'icon': '🏆', 'condition_type': 'games_completed', 'condition_value': 10},
-            {'name': '🔥 3-Day Streak', 'description': 'Played games for 3 days in a row', 'icon': '🔥', 'condition_type': 'streak', 'condition_value': 3},
-            {'name': '📚 Memory Master', 'description': 'Passed 3 memory games', 'icon': '🧠', 'condition_type': 'category_master', 'condition_value': 3},
-            {'name': '🔢 Math Whiz', 'description': 'Passed 3 math games', 'icon': '🔢', 'condition_type': 'category_master', 'condition_value': 3},
-            {'name': '🎓 Learning Champion', 'description': 'Completed 20 games', 'icon': '🎓', 'condition_type': 'games_completed', 'condition_value': 20},
+        """Initialize default badges if they don't exist"""
+        default_badges = [
+            {
+                'name': 'First Steps',
+                'description': 'Completed your first game',
+                'icon': '⭐',
+                'category': 'achievement',
+                'criteria': 'complete_first_game'
+            },
+            {
+                'name': 'Perfect Score',
+                'description': 'Got 100% on a game',
+                'icon': '🏆',
+                'category': 'achievement',
+                'criteria': 'perfect_score'
+            },
+            {
+                'name': 'Hard Worker',
+                'description': 'Completed 10 games',
+                'icon': '💪',
+                'category': 'achievement',
+                'criteria': 'complete_10_games'
+            },
+            {
+                'name': 'Star Learner',
+                'description': 'Completed 25 games',
+                'icon': '⭐',
+                'category': 'achievement',
+                'criteria': 'complete_25_games'
+            },
+            {
+                'name': 'Mastery',
+                'description': 'Passed 5 games with 80%+',
+                'icon': '🎯',
+                'category': 'achievement',
+                'criteria': 'mastery'
+            },
+            {
+                'name': 'Quick Learner',
+                'description': 'Passed 3 games in a row',
+                'icon': '🚀',
+                'category': 'achievement',
+                'criteria': 'streak'
+            }
         ]
         
-        for badge_data in badges:
+        for badge_data in default_badges:
             existing = Badge.query.filter_by(name=badge_data['name']).first()
             if not existing:
-                badge = Badge(**badge_data)
+                badge = Badge(
+                    name=badge_data['name'],
+                    description=badge_data['description'],
+                    icon=badge_data['icon'],
+                    category=badge_data['category'],
+                    criteria=badge_data['criteria']
+                )
                 db.session.add(badge)
         
         db.session.commit()
+        print("Badges initialized")
     
     @staticmethod
     def check_and_award_badges(learner):
-        """Check and award badges to a learner"""
-        awarded = []
-        
-        # Get all badges
-        all_badges = Badge.query.all()
-        
-        # Get learner's completed games
-        assignments = TestAssignment.query.filter_by(learner_id=learner.id, status='completed').all()
-        completed_count = len(assignments)
-        
-        # Get perfect scores
-        perfect_scores = 0
-        for assignment in assignments:
-            result = TestResult.query.filter_by(assignment_id=assignment.id).first()
-            if result and result.percentage == 100:
-                perfect_scores += 1
-        
-        # Check each badge
-        for badge in all_badges:
-            # Check if already earned
-            existing = LearnerBadge.query.filter_by(
-                learner_id=learner.id, 
-                badge_id=badge.id
-            ).first()
-            
-            if existing:
-                continue
-            
-            earned = False
-            
-            if badge.condition_type == 'games_completed':
-                if completed_count >= badge.condition_value:
-                    earned = True
-            
-            elif badge.condition_type == 'perfect_score':
-                if perfect_scores >= badge.condition_value:
-                    earned = True
-            
-            elif badge.condition_type == 'streak':
-                # Check streak
-                streak = BadgeService._calculate_streak(learner)
-                if streak >= badge.condition_value:
-                    earned = True
-            
-            elif badge.condition_type == 'category_master':
-                # Check category mastery
-                categories = BadgeService._get_category_mastery(learner)
-                for category, count in categories.items():
-                    if count >= badge.condition_value:
-                        earned = True
-                        break
-            
-            if earned:
-                learner_badge = LearnerBadge(
-                    learner_id=learner.id,
-                    badge_id=badge.id,
-                    earned_at=datetime.utcnow()
-                )
-                db.session.add(learner_badge)
-                awarded.append(badge)
-        
-        if awarded:
-            db.session.commit()
-        
-        return awarded
-    
-    @staticmethod
-    def _calculate_streak(learner):
-        """Calculate current streak of playing games"""
+        """Check if learner qualifies for any badges and award them"""
+        # Get all completed assignments for this learner
         assignments = TestAssignment.query.filter_by(
-            learner_id=learner.id,
-            status='completed'
-        ).order_by(TestAssignment.completed_at.desc()).all()
-        
-        if not assignments:
-            return 0
-        
-        streak = 0
-        current_date = datetime.now().date()
-        
-        for assignment in assignments:
-            if assignment.completed_at:
-                assignment_date = assignment.completed_at.date()
-                days_diff = (current_date - assignment_date).days
-                if days_diff == 0 or days_diff == 1:
-                    streak += 1
-                    current_date = assignment_date
-                else:
-                    break
-        
-        return streak
-    
-    @staticmethod
-    def _get_category_mastery(learner):
-        """Get number of games passed per category"""
-        assignments = TestAssignment.query.filter_by(
-            learner_id=learner.id,
+            learner_id=learner.id, 
             status='completed'
         ).all()
         
-        categories = {}
+        if not assignments:
+            return []
         
-        for assignment in assignments:
-            result = TestResult.query.filter_by(assignment_id=assignment.id).first()
-            if result and result.passed:
-                game = Game.query.get(assignment.game_id)
-                if game:
-                    categories[game.category] = categories.get(game.category, 0) + 1
+        # Get all results
+        results = TestResult.query.filter(
+            TestResult.assignment_id.in_([a.id for a in assignments])
+        ).all()
         
-        return categories
+        # Calculate stats
+        total_completed = len(assignments)
+        total_passed = len([r for r in results if r.passed])
+        perfect_scores = len([r for r in results if r.percentage == 100])
+        high_scores = len([r for r in results if r.percentage >= 80])
+        
+        # Get already earned badges
+        earned_badge_ids = [lb.badge_id for lb in LearnerBadge.query.filter_by(learner_id=learner.id).all()]
+        
+        # Check each badge criteria
+        all_badges = Badge.query.all()
+        new_badges = []
+        
+        for badge in all_badges:
+            if badge.id in earned_badge_ids:
+                continue
+            
+            should_award = False
+            
+            if badge.criteria == 'complete_first_game' and total_completed >= 1:
+                should_award = True
+            elif badge.criteria == 'perfect_score' and perfect_scores >= 1:
+                should_award = True
+            elif badge.criteria == 'complete_10_games' and total_completed >= 10:
+                should_award = True
+            elif badge.criteria == 'complete_25_games' and total_completed >= 25:
+                should_award = True
+            elif badge.criteria == 'mastery' and high_scores >= 5:
+                should_award = True
+            elif badge.criteria == 'streak':
+                # Check for 3 consecutive passes
+                recent_results = sorted(results, key=lambda r: r.completed_at, reverse=True)[:3]
+                if len(recent_results) >= 3 and all(r.passed for r in recent_results):
+                    should_award = True
+            
+            if should_award:
+                learner_badge = LearnerBadge(
+                    learner_id=learner.id,
+                    badge_id=badge.id,
+                    awarded_at=datetime.utcnow()
+                )
+                db.session.add(learner_badge)
+                new_badges.append(badge)
+        
+        if new_badges:
+            db.session.commit()
+            print(f"Awarded {len(new_badges)} badges to {learner.user.name}")
+        
+        return new_badges
+    
+    @staticmethod
+    def get_learner_badges(learner):
+        """Get all badges earned by a learner"""
+        learner_badges = LearnerBadge.query.filter_by(learner_id=learner.id).all()
+        badges = []
+        for lb in learner_badges:
+            badge = Badge.query.get(lb.badge_id)
+            if badge:
+                badges.append({
+                    'badge': badge,
+                    'awarded_at': lb.awarded_at
+                })
+        return badges
+    
+    @staticmethod
+    def get_badge_count(learner):
+        """Get total number of badges earned"""
+        return LearnerBadge.query.filter_by(learner_id=learner.id).count()
