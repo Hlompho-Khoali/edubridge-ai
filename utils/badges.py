@@ -56,7 +56,6 @@ class BadgeService:
         for badge_data in default_badges:
             existing = Badge.query.filter_by(name=badge_data['name']).first()
             if not existing:
-                # Provide all required fields
                 badge = Badge(
                     name=badge_data['name'],
                     description=badge_data['description'],
@@ -118,10 +117,11 @@ class BadgeService:
                     should_award = True
             
             if should_award:
+                # Remove awarded_at if it doesn't exist in the model
                 learner_badge = LearnerBadge(
                     learner_id=learner.id,
-                    badge_id=badge.id,
-                    awarded_at=datetime.utcnow()
+                    badge_id=badge.id
+                    # awarded_at is removed - let the database handle it with default
                 )
                 db.session.add(learner_badge)
                 new_badges.append(badge)
@@ -142,7 +142,7 @@ class BadgeService:
             if badge:
                 badges.append({
                     'badge': badge,
-                    'awarded_at': lb.awarded_at
+                    'awarded_at': lb.awarded_at if hasattr(lb, 'awarded_at') else None
                 })
         return badges
     
