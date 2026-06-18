@@ -33,10 +33,10 @@ if DATABASE_URL:
         DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
     
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-    print(f"✅ Using PostgreSQL with psycopg: {DATABASE_URL[:50]}...")
+    print(f"Using PostgreSQL with psycopg: {DATABASE_URL[:50]}...")
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-    print("⚠️ Using SQLite (local development)")
+    print("Using SQLite (local development)")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -57,11 +57,10 @@ def run_migrations():
         
         with app.app_context():
             inspector = inspect(db.engine)
-            existing_columns = [col['name'] for col in inspector.get_columns('games')]
             
-            print(f"🔍 Existing columns: {existing_columns}")
-            
-            new_columns = {
+            # Games table columns
+            games_columns = [col['name'] for col in inspector.get_columns('games')]
+            games_new_columns = {
                 'grade_level': 'INTEGER DEFAULT 1',
                 'subcategory': 'VARCHAR(50) DEFAULT \'default\'',
                 'accessibility_features': 'TEXT DEFAULT \'{}\'',
@@ -69,28 +68,46 @@ def run_migrations():
                 'audio_support': 'BOOLEAN DEFAULT FALSE',
                 'movement_breaks': 'BOOLEAN DEFAULT FALSE',
                 'progress_tracking': 'BOOLEAN DEFAULT TRUE',
-                'max_questions': 'INTEGER DEFAULT 10'
+                'max_questions': 'INTEGER DEFAULT 10',
+                'disability_type': 'VARCHAR(50) DEFAULT \'none\'',
+                'recommended_for': 'VARCHAR(50) DEFAULT \'all\''
             }
             
-            columns_to_add = [col for col in new_columns.keys() if col not in existing_columns]
-            
-            if columns_to_add:
-                print(f"🔄 Adding columns: {columns_to_add}")
-                
-                for col_name in columns_to_add:
+            for col_name, col_type in games_new_columns.items():
+                if col_name not in games_columns:
                     try:
-                        db.session.execute(text(f'ALTER TABLE games ADD COLUMN {col_name} {new_columns[col_name]}'))
-                        print(f"✅ Added column: {col_name}")
+                        db.session.execute(text(f'ALTER TABLE games ADD COLUMN {col_name} {col_type}'))
+                        print(f"Added column to games: {col_name}")
                     except Exception as e:
-                        print(f"⚠️ Error adding {col_name}: {e}")
-                
-                db.session.commit()
-                print("✅ Migration completed successfully!")
-            else:
-                print("✅ All columns already exist!")
+                        print(f"Error adding {col_name} to games: {e}")
+            
+            # Learners table columns
+            learners_columns = [col['name'] for col in inspector.get_columns('learners')]
+            learners_new_columns = {
+                'accessibility_preferences': 'TEXT DEFAULT \'{}\'',
+                'disability_type': 'VARCHAR(50) DEFAULT \'none\'',
+                'disability_notes': 'TEXT',
+                'assessment_completed': 'BOOLEAN DEFAULT FALSE',
+                'assessment_date': 'DATETIME',
+                'cognitive_scores': 'TEXT DEFAULT \'{}\'',
+                'condition_probabilities': 'TEXT DEFAULT \'{}\'',
+                'recommendations': 'TEXT DEFAULT \'[]\'',
+                'last_assessment': 'DATETIME'
+            }
+            
+            for col_name, col_type in learners_new_columns.items():
+                if col_name not in learners_columns:
+                    try:
+                        db.session.execute(text(f'ALTER TABLE learners ADD COLUMN {col_name} {col_type}'))
+                        print(f"Added column to learners: {col_name}")
+                    except Exception as e:
+                        print(f"Error adding {col_name} to learners: {e}")
+            
+            db.session.commit()
+            print("Migration completed successfully!")
                 
     except Exception as e:
-        print(f"⚠️ Migration warning: {e}")
+        print(f"Migration warning: {e}")
 
 # ==================== RUN MIGRATION ON STARTUP ====================
 with app.app_context():
@@ -101,7 +118,7 @@ with app.app_context():
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
-# ==================== CUSTOM JINJA2 FILTER ====================
+# ==================== CUSTOM JINJA2 FILTERS ====================
 @app.template_filter('fromjson')
 def from_json_filter(value):
     if value:
@@ -110,6 +127,13 @@ def from_json_filter(value):
         except:
             return []
     return []
+
+@app.template_filter('contains')
+def contains_filter(value, substring):
+    """Check if a string contains a substring"""
+    if value and substring:
+        return substring.lower() in value.lower()
+    return False
 
 # ==================== INITIALIZE DATABASE ====================
 with app.app_context():
@@ -760,6 +784,7 @@ def assign_test():
         print(f"Error in assign_test: {e}")
     
     return redirect(url_for('educator_dashboard'))
+
 # ==================== ASSESSMENT ROUTES ====================
 
 @app.route('/educator/assess-learner/<int:learner_id>')
@@ -777,7 +802,6 @@ def assess_learner(learner_id):
         flash('You do not have access to this learner.', 'error')
         return redirect(url_for('educator_dashboard'))
     
-    # Import the cognitive assessment service
     from utils.cognitive_assessment import CognitiveAssessmentService
     
     assessment = CognitiveAssessmentService.analyze_learner_performance(learner.id)
@@ -933,6 +957,7 @@ def assign_disability_test():
         db.session.rollback()
         flash('An error occurred. Please try again.', 'error')
         return redirect(url_for('assign_test_for_learner', learner_id=learner.id))
+
 # ==================== LEARNER ROUTES ====================
 
 @app.route('/learner/dashboard')

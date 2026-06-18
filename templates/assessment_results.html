@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment Results - {{ learner.user.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .result-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+    
+    .score-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 15px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .score-bar {
+        height: 20px;
+        background: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 5px;
+    }
+    
+    .score-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.5s ease;
+    }
+    
+    .condition-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .condition-card.high {
+        border-left: 4px solid #dc3545;
+    }
+    
+    .condition-card.medium {
+        border-left: 4px solid #ffc107;
+    }
+    
+    .condition-card.low {
+        border-left: 4px solid #28a745;
+    }
+    
+    .probability-bar {
+        height: 25px;
+        background: #e0e0e0;
+        border-radius: 15px;
+        overflow: hidden;
+        margin: 10px 0;
+    }
+    
+    .probability-fill {
+        height: 100%;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 10px;
+        font-size: 0.8rem;
+        color: white;
+        font-weight: bold;
+        transition: width 0.5s ease;
+    }
+    
+    .rec-card {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-left: 4px solid #667eea;
+    }
+    
+    .rec-card.adhd {
+        border-left-color: #dc3545;
+    }
+    
+    .rec-card.dyslexia {
+        border-left-color: #17a2b8;
+    }
+    
+    .rec-card.cognitive_pace {
+        border-left-color: #6c757d;
+    }
+    
+    .rec-card.general {
+        border-left-color: #28a745;
+    }
+    
+    .badge-risk {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 0.9rem;
+        display: inline-block;
+    }
+    
+    .badge-risk.high {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .badge-risk.medium {
+        background: #ffc107;
+        color: #333;
+    }
+    
+    .badge-risk.low {
+        background: #28a745;
+        color: white;
+    }
+    
+    .indicator-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .indicator-list li {
+        padding: 5px 10px;
+        margin-bottom: 5px;
+        background: #f8f9fa;
+        border-radius: 5px;
+        font-size: 0.9rem;
+    }
+    
+    .indicator-list li:before {
+        content: "• ";
+        color: #667eea;
+        font-weight: bold;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #5a67d8;
+        transform: translateY(-2px);
+    }
+    
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: #218838;
+        transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+    
+    .btn-print {
+        background: #17a2b8;
+        color: white;
+    }
+    
+    .btn-print:hover {
+        background: #138496;
+        transform: translateY(-2px);
+    }
+    
+    .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+    }
+    
+    @media print {
+        .btn, .actions {
+            display: none !important;
+        }
+        .result-header {
+            background: #667eea !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .score-fill, .probability-fill {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Header -->
+            <div class="result-header">
+                <h2>🧠 Cognitive Assessment Results</h2>
+                <p><strong>Student:</strong> {{ learner.user.name }}</p>
+                <p><strong>Grade:</strong> {{ learner.grade }}</p>
+                <p><strong>Assessment Date:</strong> {{ assessment.analysis_date }}</p>
+                <p><strong>Games Analyzed:</strong> {{ assessment.games_analyzed }}</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    
+                    <!-- ===== COGNITIVE DOMAIN SCORES ===== -->
+                    <h4>🧠 Cognitive Domain Scores</h4>
+                    <div class="row mb-4">
+                        {% for domain, score in assessment.cognitive_scores.items() %}
+                        <div class="col-md-3">
+                            <div class="score-card">
+                                <h6>{{ domain|replace('_', ' ')|title }}</h6>
+                                <div class="score-bar">
+                                    <div class="score-fill" style="width: {{ score }}%; background: 
+                                        {% if score >= 70 %}#28a745
+                                        {% elif score >= 50 %}#ffc107
+                                        {% else %}#dc3545{% endif %}">
+                                    </div>
+                                </div>
+                                <p class="mt-2"><strong>{{ score }}%</strong></p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- ===== CONDITION PROBABILITIES ===== -->
+                    <h4>📊 Condition Probability Analysis</h4>
+                    <p style="color: #6c757d;">Based on game performance patterns, the system detects the following probabilities:</p>
+                    
+                    <div class="row mb-4">
+                        {% for condition, prob in assessment.condition_probabilities.items() %}
+                            {% if condition != 'adhd_indicators' and condition != 'dyslexia_indicators' and condition != 'pace_indicators' %}
+                            <div class="col-md-4">
+                                <div class="condition-card 
+                                    {% if prob >= 70 %}high
+                                    {% elif prob >= 50 %}medium
+                                    {% else %}low{% endif %}">
+                                    <h5>{{ condition|replace('_', ' ')|title }}</h5>
+                                    <div class="probability-bar">
+                                        <div class="probability-fill" style="width: {{ prob }}%; background:
+                                            {% if prob >= 70 %}#dc3545
+                                            {% elif prob >= 50 %}#ffc107
+                                            {% else %}#28a745{% endif %}">
+                                            {{ prob }}%
+                                        </div>
+                                    </div>
+                                    <div class="text-center">
+                                        <span class="badge-risk 
+                                            {% if prob >= 70 %}high
+                                            {% elif prob >= 50 %}medium
+                                            {% else %}low{% endif %}">
+                                            {% if prob >= 70 %}🔴 High Risk
+                                            {% elif prob >= 50 %}🟡 Moderate Risk
+                                            {% else %}🟢 Low Risk{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- ===== DETECTION INDICATORS ===== -->
+                    <h4>🔍 Detection Indicators</h4>
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <h6>ADHD Indicators</h6>
+                            {% if assessment.condition_probabilities.adhd_indicators %}
+                            <ul class="indicator-list">
+                                {% for indicator in assessment.condition_probabilities.adhd_indicators %}
+                                <li>{{ indicator }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p style="color: #6c757d;">No significant indicators</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Dyslexia Indicators</h6>
+                            {% if assessment.condition_probabilities.dyslexia_indicators %}
+                            <ul class="indicator-list">
+                                {% for indicator in assessment.condition_probabilities.dyslexia_indicators %}
+                                <li>{{ indicator }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p style="color: #6c757d;">No significant indicators</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Cognitive Pace Indicators</h6>
+                            {% if assessment.condition_probabilities.pace_indicators %}
+                            <ul class="indicator-list">
+                                {% for indicator in assessment.condition_probabilities.pace_indicators %}
+                                <li>{{ indicator }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p style="color: #6c757d;">No significant indicators</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- ===== RECOMMENDATIONS ===== -->
+                    <h4>💡 Personalized Recommendations</h4>
+                    <div class="recommendations">
+                        {% for rec in assessment.recommendations %}
+                        <div class="rec-card 
+                            {% if 'ADHD' in rec.title %}adhd
+                            {% elif 'Dyslexia' in rec.title %}dyslexia
+                            {% elif 'Cognitive Pace' in rec.title %}cognitive_pace
+                            {% else %}general{% endif %}">
+                            <h5>{{ rec.title }}</h5>
+                            <p>{{ rec.description }}</p>
+                            {% if rec.interventions %}
+                            <ul>
+                                {% for intervention in rec.interventions %}
+                                <li>{{ intervention }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                            {% if rec.recommended_games %}
+                            <p><strong>Recommended Games:</strong> {{ rec.recommended_games|join(', ') }}</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- ===== ACTIONS ===== -->
+                    <div class="actions">
+                        <a href="{{ url_for('educator_dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+                        <a href="{{ url_for('run_assessment', learner_id=learner.id) }}" class="btn btn-success">Run New Assessment</a>
+                        <button onclick="window.print()" class="btn btn-print">Print Results</button>
+                        <a href="{{ url_for('assign_test_for_learner', learner_id=learner.id) }}" class="btn btn-primary">Assign Disability-Specific Game</a>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate score bars on load
+    document.querySelectorAll('.score-fill, .probability-fill').forEach(function(bar) {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(function() {
+            bar.style.width = width;
+        }, 200);
+    });
+});
+</script>
+{% endblock %}
