@@ -112,6 +112,21 @@
         color: #004085;
     }
     
+    .badge-adhd {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .badge-dyslexia {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .badge-cognitive {
+        background: #e2e3e5;
+        color: #383d41;
+    }
+    
     table {
         width: 100%;
         border-collapse: collapse;
@@ -139,6 +154,7 @@
         border-radius: 5px;
         text-decoration: none;
         display: inline-block;
+        margin: 2px;
     }
     
     .btn-primary {
@@ -205,6 +221,25 @@
         transform: translateY(-2px);
     }
     
+    .btn-warning {
+        background: #ffc107;
+        color: #333;
+        padding: 5px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .btn-warning:hover {
+        background: #e0a800;
+        transform: translateY(-2px);
+    }
+    
     .btn-ai {
         background: #667eea;
         color: white;
@@ -239,6 +274,26 @@
     .btn-path:hover {
         background: #138496;
         transform: translateY(-2px);
+    }
+    
+    .btn-assess {
+        background: #fd7e14;
+        color: white;
+        padding: 5px 12px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .btn-assess:hover {
+        background: #e06b0a;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 10px rgba(253, 126, 20, 0.3);
     }
     
     .btn-generator {
@@ -417,7 +472,6 @@
         padding-bottom: 50px;
     }
 
-    /* ===== 3-STEP PROCESS STYLES ===== */
     .steps-container {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -552,7 +606,6 @@
         color: #856404;
     }
 
-    /* ===== LATEST GAMES SECTION ===== */
     .latest-games-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -622,7 +675,6 @@
         transform: translateY(-2px);
     }
 
-    /* ===== FLOATING ACTION BUTTON ===== */
     .fab-container {
         position: fixed;
         bottom: 30px;
@@ -725,6 +777,23 @@
         border: 2px solid white;
     }
     
+    .assessment-status {
+        padding: 2px 10px;
+        border-radius: 15px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    
+    .assessment-completed {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .assessment-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
     @media (max-width: 768px) {
         .fab-button {
             width: 55px;
@@ -736,6 +805,9 @@
             font-size: 0.75rem;
             padding: 8px 12px;
             margin-right: 10px;
+        }
+        .steps-container {
+            grid-template-columns: 1fr 1fr;
         }
     }
 
@@ -755,93 +827,44 @@
 </style>
 
 <div class="dashboard-header">
-    <h2>Welcome, {{ current_user.name }}! 👩‍🏫</h2>
+    <h2>Welcome, {{ current_user.name }}!</h2>
     <p>You are teaching <strong>Grade {{ educator.grade_teaching }}</strong></p>
     <p>Manage your students, assign games, and track progress.</p>
 </div>
 
 <!-- ===== 3-STEP PROCESS ===== -->
 <div class="section">
-    <h3><i class="fas fa-route"></i> 3-Step Recommendations Process</h3>
-    <p style="color: #6c757d; margin-bottom: 5px;">Follow these steps to generate personalized recommendations for your learners</p>
+    <h3>3-Step Assessment Process</h3>
+    <p style="color: #6c757d; margin-bottom: 5px;">Test, Analyze, and Support your learners</p>
     
     <div class="steps-container">
-        <!-- STEP 1: View Students -->
         <div class="step-card active">
             <div class="step-number">1</div>
-            <span class="step-icon"><i class="fas fa-users"></i></span>
-            <h4>View Students</h4>
-            <p>Browse your students and see their progress at a glance</p>
-            <a href="#all-students" class="step-action primary">
-                <i class="fas fa-arrow-right"></i> View Students
-            </a>
-            <div>
-                <span class="step-status active">In Progress</span>
-            </div>
+            <span class="step-icon">📝</span>
+            <h4>Assign Games</h4>
+            <p>Assign age-appropriate games to your students</p>
+            <a href="#assign-test" class="step-action primary">Assign Tests</a>
+            <div><span class="step-status active">In Progress</span></div>
         </div>
         
-        <!-- STEP 2: Analyze Performance -->
         <div class="step-card">
             <div class="step-number">2</div>
-            <span class="step-icon"><i class="fas fa-chart-line"></i></span>
-            <h4>Analyze Performance</h4>
-            <p>Review individual student performance data and identify patterns</p>
-            <a href="#student-progress" class="step-action secondary">
-                <i class="fas fa-chart-bar"></i> View Progress
-            </a>
-            <div>
-                <span class="step-status pending">Pending</span>
-            </div>
+            <span class="step-icon">🧠</span>
+            <h4>Run Assessment</h4>
+            <p>AI analyzes performance to detect learning conditions</p>
+            <a href="#student-list" class="step-action secondary">View Students</a>
+            <div><span class="step-status pending">Pending</span></div>
         </div>
         
-        <!-- STEP 3: Generate Recommendations -->
         <div class="step-card">
             <div class="step-number">3</div>
-            <span class="step-icon"><i class="fas fa-lightbulb"></i></span>
-            <h4>Generate Recommendations</h4>
-            <p>Get AI-powered recommendations for each learner</p>
-            <a href="#learner-recommendations" class="step-action success">
-                <i class="fas fa-lightbulb"></i> View Recommendations
-            </a>
-            <div>
-                <span class="step-status pending">Pending</span>
-            </div>
+            <span class="step-icon">💡</span>
+            <h4>Get Recommendations</h4>
+            <p>Receive personalized interventions and support strategies</p>
+            <a href="#learner-recommendations" class="step-action success">View Recommendations</a>
+            <div><span class="step-status pending">Pending</span></div>
         </div>
     </div>
-</div>
-
-<!-- ===== LATEST GAMES SECTION ===== -->
-<div class="section">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-        <h3>🌟 Latest Games</h3>
-        <a href="{{ url_for('view_latest_game') }}" class="btn-latest">
-            <i class="fas fa-star"></i> View Latest Game
-        </a>
-    </div>
-    
-    {% set latest_games = games|selectattr('is_latest', 'equalto', True)|list %}
-    {% if latest_games %}
-        <div class="latest-games-grid">
-            {% for game in latest_games %}
-            <div class="latest-game-card">
-                <div class="game-title">{{ game.name }}</div>
-                <div class="game-desc">{{ game.description[:60] }}{% if game.description|length > 60 %}...{% endif %}</div>
-                <div class="game-meta">
-                    <span class="tag-latest">⭐ Latest</span>
-                    <span class="tag-date">🕐 {{ game.generated_at.strftime('%Y-%m-%d %H:%M') if game.generated_at else game.created_at.strftime('%Y-%m-%d') }}</span>
-                    <span style="font-size: 0.7rem; color: #718096;">📂 {{ game.category }}</span>
-                </div>
-                <a href="{{ url_for('view_game', game_id=game.id) }}" class="btn-view-game">View Game →</a>
-            </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="empty-state">
-            <i class="fas fa-gamepad" style="font-size: 3rem; color: #cbd5e0; margin-bottom: 10px;"></i>
-            <p style="color: #718096;">No games generated yet.</p>
-            <p style="color: #a0aec0; font-size: 0.9rem;">Click "Generate Game" to create your first game!</p>
-        </div>
-    {% endif %}
 </div>
 
 <!-- ===== STATS ===== -->
@@ -862,26 +885,53 @@
         <h3>{{ assignments|selectattr('assignment.status', 'equalto', 'completed')|list|length }}</h3>
         <p>Completed Tests</p>
     </div>
+    <div class="stat-card">
+        <h3>{{ learners|selectattr('assessment_completed', 'equalto', True)|list|length }}</h3>
+        <p>Assessed Students</p>
+    </div>
+</div>
+
+<!-- ===== LATEST GAMES SECTION ===== -->
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <h3>Latest Games</h3>
+        <a href="{{ url_for('view_latest_game') }}" class="btn-latest">View Latest Game</a>
+    </div>
+    
+    {% set latest_games = games|selectattr('is_latest', 'equalto', True)|list %}
+    {% if latest_games %}
+        <div class="latest-games-grid">
+            {% for game in latest_games %}
+            <div class="latest-game-card">
+                <div class="game-title">{{ game.name }}</div>
+                <div class="game-desc">{{ game.description[:60] }}{% if game.description|length > 60 %}...{% endif %}</div>
+                <div class="game-meta">
+                    <span class="tag-latest">Latest</span>
+                    <span class="tag-date">{{ game.generated_at.strftime('%Y-%m-%d %H:%M') if game.generated_at else game.created_at.strftime('%Y-%m-%d') }}</span>
+                    <span style="font-size: 0.7rem; color: #718096;">{{ game.category }}</span>
+                </div>
+                <a href="{{ url_for('view_game', game_id=game.id) }}" class="btn-view-game">View Game</a>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p style="color: #718096;">No games generated yet.</p>
+            <p style="color: #a0aec0; font-size: 0.9rem;">Click "Generate Game" to create your first game!</p>
+        </div>
+    {% endif %}
 </div>
 
 <!-- ===== VIEW ALL STUDENTS BUTTON ===== -->
 <div class="section">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-        <h3>👨‍🎓 All Students</h3>
+        <h3>All Students</h3>
         <div class="action-buttons">
-            <a href="#all-students" class="view-all-btn">
-                <i class="fas fa-users"></i> View All Students
-            </a>
-            <a href="{{ url_for('ai_generate_game') }}" class="btn-generator">
-                <i class="fas fa-robot"></i> 🤖 Generate Game
-            </a>
-            <a href="{{ url_for('view_latest_game') }}" class="btn-latest">
-                <i class="fas fa-star"></i> ⭐ Latest Game
-            </a>
+            <a href="#all-students" class="view-all-btn">View All Students</a>
+            <a href="{{ url_for('ai_generate_game') }}" class="btn-generator">Generate Game</a>
+            <a href="{{ url_for('view_latest_game') }}" class="btn-latest">Latest Game</a>
             <form action="{{ url_for('logout') }}" method="POST" class="logout-form">
-                <button type="submit" class="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
+                <button type="submit" class="logout-btn">Logout</button>
             </form>
         </div>
     </div>
@@ -889,25 +939,21 @@
 
 <!-- ===== SEARCH STUDENTS ===== -->
 <div class="section" id="all-students">
-    <h3>🔍 Search Students</h3>
+    <h3>Search Students</h3>
     <div class="search-box">
         <form method="GET" action="{{ url_for('educator_dashboard') }}" style="display: flex; gap: 10px; flex-wrap: wrap; width: 100%;">
             <input type="text" name="search" placeholder="Search by name or ID number..." value="{{ search_query or '' }}">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-search"></i> Search
-            </button>
+            <button type="submit" class="btn btn-primary">Search</button>
             {% if search_query %}
-                <a href="{{ url_for('educator_dashboard') }}" class="btn btn-secondary">
-                    <i class="fas fa-times"></i> Clear
-                </a>
+                <a href="{{ url_for('educator_dashboard') }}" class="btn btn-secondary">Clear</a>
             {% endif %}
         </form>
     </div>
 </div>
 
 <!-- ===== STUDENTS LIST ===== -->
-<div class="section">
-    <h3>👨‍🎓 Student List</h3>
+<div class="section" id="student-list">
+    <h3>Student List</h3>
     <div style="overflow-x: auto;">
         <table>
             <thead>
@@ -917,10 +963,11 @@
                     <th>ID Number</th>
                     <th>Login Code</th>
                     <th>Grade</th>
+                    <th>Disability</th>
                     <th>Games Assigned</th>
                     <th>Games Completed</th>
-                    <th>Average Score</th>
-                    <th>Status</th>
+                    <th>Avg Score</th>
+                    <th>Assessment</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -931,12 +978,19 @@
                         <td>{{ loop.index }}</td>
                         <td><strong>{{ learner.user.name }}</strong></td>
                         <td>{{ learner.id_number }}</td>
-                        <td>
-                            <span class="learner-login-code">
-                                <i class="fas fa-key"></i> {{ learner.login_code }}
-                            </span>
-                        </td>
+                        <td><span class="learner-login-code">{{ learner.login_code }}</span></td>
                         <td>Grade {{ learner.grade }}</td>
+                        <td>
+                            {% if learner.disability_type == 'adhd' %}
+                                <span class="badge badge-adhd">ADHD</span>
+                            {% elif learner.disability_type == 'dyslexia' %}
+                                <span class="badge badge-dyslexia">Dyslexia</span>
+                            {% elif learner.disability_type == 'cognitive_pace' %}
+                                <span class="badge badge-cognitive">Cognitive Pace</span>
+                            {% else %}
+                                <span class="badge badge-pending">None</span>
+                            {% endif %}
+                        </td>
                         <td>{{ learner.assignment_count }}</td>
                         <td>{{ learner.completed_count }}</td>
                         <td>
@@ -947,40 +1001,26 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if learner.completed_count > 0 %}
-                                {% set pass_rate = (learner.passed_count / learner.completed_count * 100) if learner.completed_count > 0 else 0 %}
-                                {% if pass_rate >= 70 %}
-                                    <span class="badge badge-passed">✅ Good Progress</span>
-                                {% elif pass_rate >= 40 %}
-                                    <span class="badge badge-progress">📈 Needs Practice</span>
-                                {% else %}
-                                    <span class="badge badge-failed">⚠️ Needs Support</span>
-                                {% endif %}
+                            {% if learner.assessment_completed %}
+                                <span class="assessment-status assessment-completed">Completed</span>
                             {% else %}
-                                <span class="badge badge-pending">⏳ Not Started</span>
+                                <span class="assessment-status assessment-pending">Pending</span>
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{{ url_for('view_learner_progress', learner_id=learner.id) }}" class="btn-secondary btn-small">
-                                <i class="fas fa-eye"></i> View
-                            </a>
-                            <a href="{{ url_for('view_learner_recommendations', learner_id=learner.id) }}" class="btn-secondary btn-small" style="background: #28a745; color: white;">
-                                <i class="fas fa-lightbulb"></i> Recommend
-                            </a>
-                            <a href="{{ url_for('ai_recommendations', learner_id=learner.id) }}" class="btn-ai btn-small">
-                                <i class="fas fa-robot"></i> AI
-                            </a>
-                            <a href="{{ url_for('ai_learning_path', learner_id=learner.id) }}" class="btn-path btn-small">
-                                <i class="fas fa-road"></i> Path
-                            </a>
+                            <a href="{{ url_for('view_learner_progress', learner_id=learner.id) }}" class="btn-secondary btn-small">View</a>
+                            <a href="{{ url_for('assess_learner', learner_id=learner.id) }}" class="btn-assess btn-small">Assess</a>
+                            <a href="{{ url_for('assign_test_for_learner', learner_id=learner.id) }}" class="btn-primary btn-small">Assign</a>
+                            <a href="{{ url_for('view_learner_recommendations', learner_id=learner.id) }}" class="btn-success btn-small">Recommend</a>
+                            <a href="{{ url_for('ai_recommendations', learner_id=learner.id) }}" class="btn-ai btn-small">AI</a>
+                            <a href="{{ url_for('ai_learning_path', learner_id=learner.id) }}" class="btn-path btn-small">Path</a>
                         </td>
                     </tr>
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="10" style="text-align: center; padding: 30px;">
+                        <td colspan="11" style="text-align: center; padding: 30px;">
                             <div class="empty-state">
-                                <i class="fas fa-users" style="font-size: 3rem; color: #cbd5e0; margin-bottom: 10px;"></i>
                                 <p>No students found.</p>
                                 {% if search_query %}
                                     <p>Try a different search term or clear the search.</p>
@@ -995,28 +1035,23 @@
 </div>
 
 <!-- ===== ASSIGN TEST ===== -->
-<div class="section">
-    <h3>📝 Assign New Test</h3>
+<div class="section" id="assign-test">
+    <h3>Assign New Test</h3>
     
-    <!-- Latest Game Quick Assign -->
     {% set latest_game = games|selectattr('is_latest', 'equalto', True)|first %}
     {% if latest_game %}
     <div style="background: #f0fff4; border: 2px solid #48bb78; border-radius: 10px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <div>
-            <span style="background: #48bb78; color: white; padding: 2px 10px; border-radius: 15px; font-size: 0.7rem; font-weight: 600;">⭐ Latest</span>
+            <span style="background: #48bb78; color: white; padding: 2px 10px; border-radius: 15px; font-size: 0.7rem; font-weight: 600;">Latest</span>
             <span style="font-weight: 600; margin-left: 8px;">{{ latest_game.name }}</span>
             <span style="font-size: 0.8rem; color: #718096; margin-left: 8px;">{{ latest_game.category }}</span>
         </div>
-        <a href="{{ url_for('view_game', game_id=latest_game.id) }}" class="btn-primary" style="padding: 5px 15px; font-size: 0.85rem; text-decoration: none;">
-            Assign Latest Game →
-        </a>
+        <a href="{{ url_for('view_game', game_id=latest_game.id) }}" class="btn-primary" style="padding: 5px 15px; font-size: 0.85rem; text-decoration: none;">Assign Latest Game</a>
     </div>
     {% endif %}
     
     <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-        <a href="{{ url_for('ai_generate_game') }}" class="btn-generator">
-            <i class="fas fa-robot"></i> 🤖 Create New Game with AI
-        </a>
+        <a href="{{ url_for('ai_generate_game') }}" class="btn-generator">Create New Game with AI</a>
         <span style="color: #6c757d; font-size: 0.9rem;">or select from existing games below</span>
     </div>
     
@@ -1027,7 +1062,12 @@
                 <select name="learner_id" id="learner_id" required>
                     <option value="">Choose a student</option>
                     {% for learner in learners %}
-                    <option value="{{ learner.id }}">{{ learner.user.name }} (ID: {{ learner.id_number }}) - Grade {{ learner.grade }}</option>
+                    <option value="{{ learner.id }}">
+                        {{ learner.user.name }} (ID: {{ learner.id_number }}) - Grade {{ learner.grade }}
+                        {% if learner.disability_type != 'none' %}
+                            - {{ learner.disability_type|upper }}
+                        {% endif %}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
@@ -1046,7 +1086,7 @@
                 </select>
                 {% if games|selectattr('is_latest', 'equalto', True)|list %}
                     <div style="font-size: 0.8rem; color: #48bb78; margin-top: 5px;">
-                        ⭐ Latest game: {{ games|selectattr('is_latest', 'equalto', True)|list|first|attr('name') }}
+                        Latest game: {{ games|selectattr('is_latest', 'equalto', True)|list|first|attr('name') }}
                     </div>
                 {% endif %}
             </div>
@@ -1058,7 +1098,7 @@
 
 <!-- ===== STUDENT PROGRESS TABLE ===== -->
 <div class="section" id="student-progress">
-    <h3>📊 Student Progress</h3>
+    <h3>Student Progress</h3>
     <div style="overflow-x: auto;">
         <table>
             <thead>
@@ -1067,6 +1107,7 @@
                     <th>ID Number</th>
                     <th>Login Code</th>
                     <th>Grade</th>
+                    <th>Disability</th>
                     <th>Test Name</th>
                     <th>Status</th>
                     <th>Score</th>
@@ -1084,20 +1125,29 @@
                 <tr>
                     <td><strong>{{ learner.user.name }}</strong></td>
                     <td>{{ learner.id_number }}</td>
-                    <td>
-                        <span class="learner-login-code">{{ learner.login_code }}</span>
-                    </td>
+                    <td><span class="learner-login-code">{{ learner.login_code }}</span></td>
                     <td>Grade {{ learner.grade }}</td>
+                    <td>
+                        {% if learner.disability_type == 'adhd' %}
+                            <span class="badge badge-adhd">ADHD</span>
+                        {% elif learner.disability_type == 'dyslexia' %}
+                            <span class="badge badge-dyslexia">Dyslexia</span>
+                        {% elif learner.disability_type == 'cognitive_pace' %}
+                            <span class="badge badge-cognitive">Cognitive Pace</span>
+                        {% else %}
+                            <span class="badge badge-pending">None</span>
+                        {% endif %}
+                    </td>
                     <td>{{ game.name }}</td>
                     <td>
                         {% if assignment.status == 'completed' %}
-                            <span class="badge badge-passed">✅ Completed</span>
+                            <span class="badge badge-passed">Completed</span>
                         {% elif assignment.status == 'in_progress' %}
-                            <span class="badge badge-progress">⏳ In Progress</span>
+                            <span class="badge badge-progress">In Progress</span>
                         {% elif assignment.status == 'expired' %}
-                            <span class="badge badge-failed">⏰ Expired</span>
+                            <span class="badge badge-failed">Expired</span>
                         {% else %}
-                            <span class="badge badge-pending">📌 Pending</span>
+                            <span class="badge badge-pending">Pending</span>
                         {% endif %}
                     </td>
                     <td>
@@ -1110,12 +1160,12 @@
                     <td>
                         {% if result %}
                             {% if result.passed %}
-                                <span class="badge badge-passed">✅ Passed</span>
+                                <span class="badge badge-passed">Passed</span>
                             {% else %}
-                                <span class="badge badge-failed">❌ Failed</span>
+                                <span class="badge badge-failed">Failed</span>
                             {% endif %}
                         {% else %}
-                            <span class="badge badge-pending">⏳ Not started</span>
+                            <span class="badge badge-pending">Not started</span>
                         {% endif %}
                     </td>
                     <td>
@@ -1127,12 +1177,9 @@
                     </td>
                     <td>
                         {% if result %}
-                            <a href="{{ url_for('test_results', result_id=result.id) }}" class="btn-secondary btn-small">
-                                <i class="fas fa-eye"></i> View
-                            </a>
-                            <a href="{{ url_for('view_learner_recommendations', learner_id=learner.id) }}" class="btn-secondary btn-small" style="background: #28a745; color: white;">
-                                <i class="fas fa-lightbulb"></i> Recommend
-                            </a>
+                            <a href="{{ url_for('test_results', result_id=result.id) }}" class="btn-secondary btn-small">View</a>
+                            <a href="{{ url_for('assess_learner', learner_id=learner.id) }}" class="btn-assess btn-small">Assess</a>
+                            <a href="{{ url_for('view_learner_recommendations', learner_id=learner.id) }}" class="btn-success btn-small">Recommend</a>
                         {% else %}
                             <span class="badge badge-pending">N/A</span>
                         {% endif %}
@@ -1140,9 +1187,8 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="10" style="text-align: center; padding: 30px;">
+                    <td colspan="11" style="text-align: center; padding: 30px;">
                         <div class="empty-state">
-                            <i class="fas fa-clipboard-list" style="font-size: 3rem; color: #cbd5e0; margin-bottom: 10px;"></i>
                             <p>No assignments yet. Assign a test to get started!</p>
                         </div>
                     </td>
@@ -1155,8 +1201,8 @@
 
 <!-- ===== LEARNER RECOMMENDATIONS ===== -->
 <div class="section" id="learner-recommendations">
-    <h3>💡 Learner Recommendations</h3>
-    <p style="color: #6c757d; margin-bottom: 20px;">AI-generated recommendations based on learner performance.</p>
+    <h3>Learner Recommendations</h3>
+    <p style="color: #6c757d; margin-bottom: 20px;">AI-generated recommendations based on learner performance and cognitive assessment.</p>
     
     <div style="overflow-x: auto;">
         <table>
@@ -1164,8 +1210,10 @@
                 <tr>
                     <th>Student Name</th>
                     <th>Grade</th>
+                    <th>Disability</th>
                     <th>Games Completed</th>
                     <th>Pass Rate</th>
+                    <th>Assessment Status</th>
                     <th>Recommendations</th>
                 </tr>
             </thead>
@@ -1174,6 +1222,17 @@
                 <tr>
                     <td><strong>{{ learner.user.name }}</strong></td>
                     <td>Grade {{ learner.grade }}</td>
+                    <td>
+                        {% if learner.disability_type == 'adhd' %}
+                            <span class="badge badge-adhd">ADHD</span>
+                        {% elif learner.disability_type == 'dyslexia' %}
+                            <span class="badge badge-dyslexia">Dyslexia</span>
+                        {% elif learner.disability_type == 'cognitive_pace' %}
+                            <span class="badge badge-cognitive">Cognitive Pace</span>
+                        {% else %}
+                            <span class="badge badge-pending">None</span>
+                        {% endif %}
+                    </td>
                     <td>{{ learner.completed_count }}</td>
                     <td>
                         {% if learner.completed_count > 0 %}
@@ -1183,32 +1242,43 @@
                         {% endif %}
                     </td>
                     <td>
+                        {% if learner.assessment_completed %}
+                            <span class="assessment-status assessment-completed">Assessed</span>
+                        {% else %}
+                            <span class="assessment-status assessment-pending">Not Assessed</span>
+                        {% endif %}
+                    </td>
+                    <td>
                         {% if learner.completed_count > 0 %}
                             {% set pass_rate = (learner.passed_count / learner.completed_count * 100) if learner.completed_count > 0 else 0 %}
                             <div class="recommendation-box">
                                 <ul>
-                                    {% if pass_rate >= 80 %}
-                                        <li>🌟 <strong>Excellent progress!</strong> Consider challenging with advanced games.</li>
-                                        <li>📚 Encourage peer tutoring to help other students.</li>
-                                    {% elif pass_rate >= 50 %}
-                                        <li>📈 <strong>Good progress!</strong> Continue practicing to improve scores.</li>
-                                        <li>🎯 Focus on games with lower scores for improvement.</li>
-                                    {% elif pass_rate >= 30 %}
-                                        <li>📖 <strong>Needs practice.</strong> Review basic concepts before advanced games.</li>
-                                        <li>🎮 Try simpler games to build confidence and skills.</li>
-                                    {% else %}
-                                        <li>🤝 <strong>Requires support.</strong> Consider one-on-one assistance.</li>
-                                        <li>📝 Review game instructions and try again with guidance.</li>
+                                    {% if learner.disability_type == 'adhd' %}
+                                        <li>ADHD Support: Use short, focused sessions with visual rewards</li>
+                                        <li>Recommended games: Attention, Memory, and Sensory games</li>
+                                    {% elif learner.disability_type == 'dyslexia' %}
+                                        <li>Dyslexia Support: Use read-aloud, large fonts, and audio support</li>
+                                        <li>Recommended games: Language and Memory games</li>
+                                    {% elif learner.disability_type == 'cognitive_pace' %}
+                                        <li>Cognitive Pace Support: Allow extra time, step-by-step instructions</li>
+                                        <li>Recommended games: Math and Pattern Recognition games</li>
                                     {% endif %}
-                                    <li>🎯 Recommended game: 
-                                        {% if pass_rate >= 70 %}
-                                            Advanced
-                                        {% elif pass_rate >= 40 %}
-                                            Intermediate
-                                        {% else %}
-                                            Beginner
-                                        {% endif %} level
-                                    </li>
+                                    
+                                    {% if pass_rate >= 80 %}
+                                        <li>Excellent progress! Consider challenging with advanced games.</li>
+                                    {% elif pass_rate >= 50 %}
+                                        <li>Good progress! Continue practicing to improve scores.</li>
+                                    {% elif pass_rate >= 30 %}
+                                        <li>Needs practice. Review basic concepts before advanced games.</li>
+                                    {% else %}
+                                        <li>Requires support. Consider one-on-one assistance.</li>
+                                    {% endif %}
+                                    
+                                    {% if learner.assessment_completed %}
+                                        <li>Assessment completed. View detailed results for personalized interventions.</li>
+                                    {% else %}
+                                        <li>Run assessment to get detailed cognitive analysis.</li>
+                                    {% endif %}
                                 </ul>
                             </div>
                         {% else %}
@@ -1218,9 +1288,8 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 30px;">
+                    <td colspan="7" style="text-align: center; padding: 30px;">
                         <div class="empty-state">
-                            <i class="fas fa-chart-line" style="font-size: 3rem; color: #cbd5e0; margin-bottom: 10px;"></i>
                             <p>No learner data available for recommendations.</p>
                         </div>
                     </td>
@@ -1233,28 +1302,17 @@
 
 <!-- ===== ACTIONS ===== -->
 <div style="text-align: center; margin-top: 30px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-    <a href="{{ url_for('educator_dashboard') }}" class="btn-primary" style="text-decoration: none;">
-        <i class="fas fa-sync"></i> Refresh Dashboard
-    </a>
-    <a href="{{ url_for('ai_generate_game') }}" class="btn-generator" style="text-decoration: none;">
-        <i class="fas fa-robot"></i> 🤖 Generate Game
-    </a>
-    <a href="{{ url_for('view_latest_game') }}" class="btn-latest" style="text-decoration: none;">
-        <i class="fas fa-star"></i> ⭐ Latest Game
-    </a>
+    <a href="{{ url_for('educator_dashboard') }}" class="btn-primary" style="text-decoration: none;">Refresh Dashboard</a>
+    <a href="{{ url_for('ai_generate_game') }}" class="btn-generator" style="text-decoration: none;">Generate Game</a>
+    <a href="{{ url_for('view_latest_game') }}" class="btn-latest" style="text-decoration: none;">Latest Game</a>
     <form action="{{ url_for('logout') }}" method="POST" class="logout-form">
-        <button type="submit" class="logout-btn">
-            <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
+        <button type="submit" class="logout-btn">Logout</button>
     </form>
 </div>
 
 <!-- ===== FLOATING AI TEACHING ASSISTANT BUTTON ===== -->
 <div class="fab-container">
-    <div class="fab-tooltip" id="fabTooltip">
-        🤖 Ask AI Teaching Assistant
-    </div>
-    
+    <div class="fab-tooltip" id="fabTooltip">Ask AI Teaching Assistant</div>
     <a href="{{ url_for('educator_ai_chat_page') }}" class="fab-button"
        onmouseenter="document.getElementById('fabTooltip').style.display='block'"
        onmouseleave="document.getElementById('fabTooltip').style.display='none'">
@@ -1265,7 +1323,6 @@
 </div>
 
 <script>
-    // Show tooltip after 3 seconds for first-time visitors
     document.addEventListener('DOMContentLoaded', function() {
         const tooltip = document.getElementById('fabTooltip');
         if (!localStorage.getItem('fabTooltipShown')) {
