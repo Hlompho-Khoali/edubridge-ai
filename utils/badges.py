@@ -13,42 +13,36 @@ class BadgeService:
                 'name': 'First Steps',
                 'description': 'Completed your first game',
                 'icon': '⭐',
-                'category': 'achievement',
                 'criteria': 'complete_first_game'
             },
             {
                 'name': 'Perfect Score',
                 'description': 'Got 100% on a game',
                 'icon': '🏆',
-                'category': 'achievement',
                 'criteria': 'perfect_score'
             },
             {
                 'name': 'Hard Worker',
                 'description': 'Completed 10 games',
                 'icon': '💪',
-                'category': 'achievement',
                 'criteria': 'complete_10_games'
             },
             {
                 'name': 'Star Learner',
                 'description': 'Completed 25 games',
                 'icon': '⭐',
-                'category': 'achievement',
                 'criteria': 'complete_25_games'
             },
             {
                 'name': 'Mastery',
                 'description': 'Passed 5 games with 80%+',
                 'icon': '🎯',
-                'category': 'achievement',
                 'criteria': 'mastery'
             },
             {
                 'name': 'Quick Learner',
                 'description': 'Passed 3 games in a row',
                 'icon': '🚀',
-                'category': 'achievement',
                 'criteria': 'streak'
             }
         ]
@@ -56,11 +50,11 @@ class BadgeService:
         for badge_data in default_badges:
             existing = Badge.query.filter_by(name=badge_data['name']).first()
             if not existing:
+                # Removed 'category' from here
                 badge = Badge(
                     name=badge_data['name'],
                     description=badge_data['description'],
                     icon=badge_data['icon'],
-                    category=badge_data['category'],
                     criteria=badge_data['criteria']
                 )
                 db.session.add(badge)
@@ -87,7 +81,6 @@ class BadgeService:
         
         # Calculate stats
         total_completed = len(assignments)
-        total_passed = len([r for r in results if r.passed])
         perfect_scores = len([r for r in results if r.percentage == 100])
         high_scores = len([r for r in results if r.percentage >= 80])
         
