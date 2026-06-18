@@ -760,7 +760,179 @@ def assign_test():
         print(f"Error in assign_test: {e}")
     
     return redirect(url_for('educator_dashboard'))
+# ==================== ASSESSMENT ROUTES ====================
 
+@app.route('/educator/assess-learner/<int:learner_id>')
+@login_required
+def assess_learner(learner_id):
+    """View assessment results for a learner"""
+    if current_user.role != 'educator':
+        flash('Access denied.', 'error')
+        return redirect(url_for('login'))
+    
+    educator = Educator.query.filter_by(user_id=current_user.id).first()
+    learner = Learner.query.get_or_404(learner_id)
+    
+    if learner.grade != educator.grade_teaching:
+        flash('You do not have access to this learner.', 'error')
+        return redirect(url_for('educator_dashboard'))
+    
+    # Import the cognitive assessment service
+    from utils.cognitive_assessment import CognitiveAssessmentService
+    
+    assessment = CognitiveAssessmentService.analyze_learner_performance(learner.id)
+    
+    if not assessment:
+        flash('Need at least 3 completed games for assessment.', 'warning')
+        return redirect(url_for('educator_dashboard'))
+    
+    return render_template('assessment_results.html',
+                         learner=learner,
+                         assessment=assessment)
+
+
+@app.route('/educator/run-assessment/<int:learner_id>')
+@login_required
+def run_assessment(learner_id):
+    """Run a new assessment for a learner"""
+    if current_user.role != 'educator':
+        flash('Access denied.', 'error')
+        return redirect(url_for('login'))
+    
+    educator = Educator.query.filter_by(user_id=current_user.id).first()
+    learner = Learner.query.get_or_404(learner_id)
+    
+    if learner.grade != educator.grade_teaching:
+        flash('You do not have access to this learner.', 'error')
+        return redirect(url_for('educator_dashboard'))
+    
+    from utils.cognitive_assessment import CognitiveAssessmentService
+    
+    assessment = CognitiveAssessmentService.analyze_learner_performance(learner.id)
+    
+    if assessment and assessment.get('status') == 'insufficient_data':
+        flash(f'Need at least 3 completed games for assessment. Currently: {assessment.get("games_played")} games.', 'warning')
+        return redirect(url_for('educator_dashboard'))
+    
+    flash('Assessment completed successfully!', 'success')
+    return redirect(url_for('assess_learner', learner_id=learner.id))
+
+
+@app.route('/educator/assign-disability-test/<int:learner_id>')
+@login_required
+def assign_test_for_learner(learner_id):
+    """Show assignment page with disability-specific options"""
+    if current_user.role != 'educator':
+        flash('Access denied.', 'error')
+        return redirect(url_for('login'))
+    
+    educator = Educator.query.filter_by(user_id=current_user.id).first()
+    learner = Learner.query.get_or_404(learner_id)
+    
+    if learner.grade != educator.grade_teaching:
+        flash('You do not have access to this learner.', 'error')
+        return redirect(url_for('educator_dashboard'))
+    
+    disability_types = AIService.get_disability_types()
+    disability_config = disability_types.get(learner.disability_type or 'none', {})
+    features = disability_config.get('features', {})
+    tips = disability_config.get('features', {}).get('tips', [])
+    
+    return render_template('assign_test_disability.html',
+                         learner=learner,
+                         features=features,
+                         tips=tips)
+
+
+@app.route('/educator/assign-disability-test', methods=['POST'])
+@login_required
+def assign_disability_test():
+    """Generate and assign a disability-specific game"""
+    if current_user.role != 'educator':
+        flash('Access denied.', 'error')
+        return redirect(url_for('login'))
+    
+    educator = Educator.query.filter_by(user_id=current_user.id).first()
+    learner_id = request.form.get('learner_id')
+    topic = request.form.get('topic', '').strip()
+    game_type = request.form.get('game_type', 'memory')
+    num_questions = int(request.form.get('num_questions', 10))
+    
+    learner = Learner.query.get_or_404(learner_id)
+    
+    if learner.grade != educator.grade_teaching:
+        flash('You do not have access to this learner.', 'error')
+        return redirect(url_for('educator_dashboard'))
+    
+    if not topic:
+        flash('Please enter a topic.', 'error')
+        return redirect(url_for('assign_test_for_learner', learner_id=learner.id))
+    
+    try:
+        disability_type = learner.disability_type or 'none'
+        game_data = AIService.generate_game_for_disability(
+            topic, 
+            learner.grade, 
+            disability_type,
+            game_type,
+            num_questions
+        )
+        
+        if not game_data or not game_data.get('questions'):
+            flash('Failed to generate game. Please try again.', 'error')
+            return redirect(url_for('assign_test_for_learner', learner_id=learner.id))
+        
+        questions = game_data.get('questions', [])
+        for q in questions:
+            if 'correct_answer' not in q or q['correct_answer'] == '':
+                if 'options' in q and q['options']:
+                    q['correct_answer'] = q['options'][0]
+                else:
+                    q['correct_answer'] = 'Not specified'
+            if 'points' not in q:
+                q['points'] = 2
+        
+        game = Game(
+            name=game_data['name'],
+            description=game_data['description'],
+            category=game_data.get('category', game_type.capitalize()),
+            difficulty=game_data.get('difficulty', 'Intermediate'),
+            questions=json.dumps(game_data['questions']),
+            passing_score=15,
+            time_limit_minutes=game_data.get('time_limit', 10) or 10,
+            is_latest=True,
+            generated_at=datetime.utcnow(),
+            grade_level=game_data.get('grade_level', learner.grade),
+            subcategory=game_data.get('subcategory', disability_type),
+            accessibility_features=json.dumps(game_data.get('accessibility_features', {})),
+            visual_style=game_data.get('visual_style', 'default'),
+            audio_support=game_data.get('audio_support', False),
+            movement_breaks=game_data.get('movement_breaks', False),
+            progress_tracking=game_data.get('progress_tracking', True),
+            max_questions=len(game_data['questions']),
+            disability_type=disability_type,
+            recommended_for=disability_type
+        )
+        db.session.add(game)
+        db.session.commit()
+        
+        assignment = TestAssignment(
+            game_id=game.id,
+            educator_id=educator.id,
+            learner_id=learner.id,
+            status='pending'
+        )
+        db.session.add(assignment)
+        db.session.commit()
+        
+        flash(f'Disability-specific game "{game.name}" assigned to {learner.user.name}!', 'success')
+        return redirect(url_for('educator_dashboard'))
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        db.session.rollback()
+        flash('An error occurred. Please try again.', 'error')
+        return redirect(url_for('assign_test_for_learner', learner_id=learner.id))
 # ==================== LEARNER ROUTES ====================
 
 @app.route('/learner/dashboard')
