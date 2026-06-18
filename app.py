@@ -840,7 +840,17 @@ def assess_learner(learner_id):
             return redirect(url_for('educator_dashboard'))
         
         if assessment.get('status') == 'insufficient_data':
-            flash
+            flash(f'Need at least 3 completed games for assessment. Currently: {assessment.get("games_played")} games.', 'warning')
+            return redirect(url_for('educator_dashboard'))
+        
+        return render_template('assessment_results.html',
+                             learner=learner,
+                             assessment=assessment)
+                             
+    except Exception as e:
+        print(f"Assessment error: {e}")
+        flash(f'Error running assessment: {str(e)}', 'error')
+        return redirect(url_for('educator_dashboard'))
 @app.route('/educator/run-assessment/<int:learner_id>')
 @login_required
 def run_assessment(learner_id):
@@ -856,18 +866,22 @@ def run_assessment(learner_id):
         flash('You do not have access to this learner.', 'error')
         return redirect(url_for('educator_dashboard'))
     
-    from utils.cognitive_assessment import CognitiveAssessmentService
-    
-    assessment = CognitiveAssessmentService.analyze_learner_performance(learner.id)
-    
-    if assessment and assessment.get('status') == 'insufficient_data':
-        flash(f'Need at least 3 completed games for assessment. Currently: {assessment.get("games_played")} games.', 'warning')
+    try:
+        from utils.cognitive_assessment import CognitiveAssessmentService
+        
+        assessment = CognitiveAssessmentService.analyze_learner_performance(learner.id)
+        
+        if assessment and assessment.get('status') == 'insufficient_data':
+            flash(f'Need at least 3 completed games for assessment. Currently: {assessment.get("games_played")} games.', 'warning')
+            return redirect(url_for('educator_dashboard'))
+        
+        flash('Assessment completed successfully!', 'success')
+        return redirect(url_for('assess_learner', learner_id=learner.id))
+        
+    except Exception as e:
+        print(f"Run assessment error: {e}")
+        flash(f'Error running assessment: {str(e)}', 'error')
         return redirect(url_for('educator_dashboard'))
-    
-    flash('Assessment completed successfully!', 'success')
-    return redirect(url_for('assess_learner', learner_id=learner.id))
-
-
 @app.route('/educator/assign-disability-test/<int:learner_id>')
 @login_required
 def assign_test_for_learner(learner_id):
