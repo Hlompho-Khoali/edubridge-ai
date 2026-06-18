@@ -8,6 +8,128 @@ from ai_config import AIConfig
 class AIService:
     """AI Service with Game Generation and Accessibility Features"""
     
+    # ===== DISABILITY TYPES METHOD =====
+    
+    @staticmethod
+    def get_disability_types():
+        """Get available disability types with their features"""
+        return {
+            'none': {
+                'name': 'No Specific Disability',
+                'description': 'Standard game for all learners',
+                'features': {}
+            },
+            'adhd': {
+                'name': 'ADHD Support',
+                'description': 'Games designed for learners with ADHD',
+                'features': {
+                    'short_rounds': True,
+                    'visual_rewards': True,
+                    'movement_breaks': True,
+                    'sound_effects': True,
+                    'progress_tracking': True,
+                    'max_questions': 5,
+                    'time_limit': 3,
+                    'visual_style': 'high_contrast',
+                    'tips': [
+                        'Take movement breaks between questions',
+                        'Use visual rewards for each correct answer',
+                        'Keep sessions short and focused',
+                        'Provide immediate positive feedback'
+                    ]
+                }
+            },
+            'dyslexia': {
+                'name': 'Dyslexia Support',
+                'description': 'Games designed for learners with dyslexia',
+                'features': {
+                    'read_aloud': True,
+                    'large_font': True,
+                    'high_contrast': True,
+                    'audio_support': True,
+                    'no_time_limit': True,
+                    'visual_cues': True,
+                    'max_questions': 8,
+                    'time_limit': None,
+                    'visual_style': 'dyslexia_friendly',
+                    'tips': [
+                        'Use read-aloud feature for all text',
+                        'Use large, clear fonts',
+                        'Take your time - no time limit',
+                        'Use visual cues alongside text',
+                        'Color-code important information'
+                    ]
+                }
+            },
+            'cognitive_pace': {
+                'name': 'Cognitive Pace Support',
+                'description': 'Games designed for learners who need more time',
+                'features': {
+                    'adjustable_speed': True,
+                    'multiple_attempts': True,
+                    'step_by_step': True,
+                    'visual_progress': True,
+                    'positive_reinforcement': True,
+                    'max_questions': 6,
+                    'time_limit': 10,
+                    'visual_style': 'calm_colors',
+                    'tips': [
+                        'Go at your own pace',
+                        'You can adjust the speed of games',
+                        'Multiple attempts are allowed',
+                        'Step-by-step instructions are available',
+                        'Visual progress tracking helps you see your growth'
+                    ]
+                }
+            }
+        }
+    
+    @staticmethod
+    def generate_game_for_disability(topic, grade, disability_type, game_type='default', num_questions=10):
+        """Generate a game specifically designed for a disability type"""
+        
+        # Get disability configuration
+        disability_config = AIService.get_disability_types().get(disability_type, {})
+        features = disability_config.get('features', {})
+        
+        # Get category configuration
+        categories = AIService.get_game_categories()
+        category_config = categories.get(game_type, categories.get('memory'))
+        
+        # Generate age-appropriate questions
+        questions = AIService._get_grade_questions(topic, grade, disability_type)
+        
+        # Limit questions based on disability
+        max_q = features.get('max_questions', num_questions)
+        if len(questions) > max_q:
+            questions = questions[:max_q]
+        
+        # Get disability tips
+        tips = features.get('tips', [])
+        
+        # Build game data with disability features
+        game_data = {
+            'name': f'{disability_config.get("name", "Learning")} - {topic.capitalize()} Explorer',
+            'description': f'Educational game designed for learners with {disability_config.get("name", "learning needs")}. {category_config.get("description", "Fun learning game")}',
+            'category': game_type,
+            'subcategory': disability_type,
+            'grade_level': grade,
+            'difficulty': AIService._get_difficulty(grade),
+            'questions': questions,
+            'accessibility_features': features,
+            'visual_style': features.get('visual_style', 'default'),
+            'audio_support': features.get('audio_support', False),
+            'movement_breaks': features.get('movement_breaks', False),
+            'progress_tracking': features.get('progress_tracking', True),
+            'max_questions': len(questions),
+            'time_limit': features.get('time_limit', 10),
+            'disability_type': disability_type,
+            'recommended_for': disability_type,
+            'tips': tips
+        }
+        
+        return game_data
+    
     @staticmethod
     def get_game_categories():
         """Get all game categories with accessibility configurations"""
