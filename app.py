@@ -1386,7 +1386,7 @@ def leaderboard():
 @app.route('/ai/generate-game', methods=['GET', 'POST'])
 @login_required
 def ai_generate_game():
-    """Generate a new game using AI"""
+    """Generate a new game using AI with accessibility features"""
     if current_user.role != 'educator':
         flash('Access denied.', 'error')
         return redirect(url_for('index'))
@@ -1396,24 +1396,37 @@ def ai_generate_game():
     if request.method == 'POST':
         topic = request.form.get('topic', '').strip()
         grade = int(request.form.get('grade', 2))
+        access_type = request.form.get('access_type', 'default')
         game_type = request.form.get('game_type', 'default')
-        num_questions = int(request.form.get('num_questions', 15))
+        num_questions = int(request.form.get('num_questions', 10))
         
         if not topic:
             flash('Please enter a topic for the game.', 'error')
             return redirect(url_for('ai_generate_game'))
         
         try:
-            game_data = AIService.generate_game(topic, grade, game_type, num_questions)
+            # Generate game with accessibility features
+            game_data = AIService.generate_game(topic, grade, access_type, num_questions)
             
             if not game_data or not game_data.get('questions'):
                 flash('Failed to generate game. Please try again.', 'error')
                 return redirect(url_for('ai_generate_game'))
             
+            # Ensure all questions have correct_answer
+            questions = game_data.get('questions', [])
+            for q in questions:
+                if 'correct_answer' not in q or q['correct_answer'] == '':
+                    if 'options' in q and q['options']:
+                        q['correct_answer'] = q['options'][0]
+                    else:
+                        q['correct_answer'] = 'Not specified'
+                if 'points' not in q:
+                    q['points'] = 2
+            
             # Mark all existing games as NOT latest
             Game.query.update({Game.is_latest: False})
             
-            # Save new game with is_latest=True
+            # Save new game with accessibility features
             game = Game(
                 name=game_data['name'],
                 description=game_data['description'],
@@ -1421,16 +1434,24 @@ def ai_generate_game():
                 difficulty=game_data.get('difficulty', 'Intermediate'),
                 questions=json.dumps(game_data['questions']),
                 passing_score=15,
-                time_limit_minutes=60,
+                time_limit_minutes=game_data.get('time_limit', 10) or 10,
                 is_latest=True,
-                generated_at=datetime.utcnow()
+                generated_at=datetime.utcnow(),
+                grade_level=game_data.get('grade_level', grade),
+                subcategory=game_data.get('subcategory', access_type),
+                accessibility_features=json.dumps(game_data.get('accessibility_features', {})),
+                visual_style=game_data.get('visual_style', 'default'),
+                audio_support=game_data.get('audio_support', False),
+                movement_breaks=game_data.get('movement_breaks', False),
+                progress_tracking=game_data.get('progress_tracking', True),
+                max_questions=len(game_data['questions'])
             )
             db.session.add(game)
             db.session.commit()
             
             game_data['id'] = game.id
             
-            flash(f'✅ Game "{game.name}" created successfully!', 'success')
+            flash(f'Game "{game.name}" created successfully!', 'success')
             return render_template('ai_generate_game.html', generated_game=game_data)
             
         except Exception as e:

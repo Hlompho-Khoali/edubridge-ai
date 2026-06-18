@@ -1,3 +1,4 @@
+# models.py
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
@@ -88,6 +89,9 @@ class Learner(db.Model):
     last_activity_date = db.Column(db.DateTime, nullable=True)
     best_streak = db.Column(db.Integer, default=0)
     
+    # Accessibility preferences
+    accessibility_preferences = db.Column(db.Text, default='{}')
+    
     @property
     def current_streak(self):
         """Calculate current streak"""
@@ -114,19 +118,14 @@ class Learner(db.Model):
             days_diff = (today - last_active).days
             
             if days_diff == 0:
-                # Already played today, no change
                 pass
             elif days_diff == 1:
-                # Consecutive day
                 self.streak_count += 1
             else:
-                # Streak broken
                 self.streak_count = 1
         else:
-            # First activity
             self.streak_count = 1
         
-        # Update best streak
         if self.streak_count > self.best_streak:
             self.best_streak = self.streak_count
         
@@ -160,12 +159,27 @@ class Game(db.Model):
     is_latest = db.Column(db.Boolean, default=False)
     generated_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Accessibility fields for Grade 1-3 learners
+    grade_level = db.Column(db.Integer, default=1)
+    subcategory = db.Column(db.String(50), default='default')
+    accessibility_features = db.Column(db.Text, default='{}')
+    visual_style = db.Column(db.String(50), default='default')
+    audio_support = db.Column(db.Boolean, default=False)
+    movement_breaks = db.Column(db.Boolean, default=False)
+    progress_tracking = db.Column(db.Boolean, default=True)
+    max_questions = db.Column(db.Integer, default=10)
     
     def get_questions(self):
         return json.loads(self.questions)
     
     def set_questions(self, questions):
         self.questions = json.dumps(questions)
+    
+    def get_accessibility_features(self):
+        return json.loads(self.accessibility_features) if self.accessibility_features else {}
+    
+    def set_accessibility_features(self, features):
+        self.accessibility_features = json.dumps(features)
 
 class TestAssignment(db.Model):
     __tablename__ = 'test_assignments'
@@ -191,10 +205,9 @@ class TestResult(db.Model):
     score = db.Column(db.Integer, nullable=False, default=0)
     percentage = db.Column(db.Float, nullable=False, default=0.0)
     passed = db.Column(db.Boolean, nullable=False, default=False)
-    answers = db.Column(db.Text, nullable=True)  # JSON string of answers
+    answers = db.Column(db.Text, nullable=True)
     completed_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
-    # Relationships
     assignment = db.relationship('TestAssignment', backref=db.backref('result', uselist=False))
     
     def get_answers(self):
@@ -203,7 +216,6 @@ class TestResult(db.Model):
     def set_answers(self, answers):
         self.answers = json.dumps(answers)
 
-# CognitiveAssessment class
 class CognitiveAssessment(db.Model):
     __tablename__ = 'cognitive_assessments'
     
@@ -211,7 +223,6 @@ class CognitiveAssessment(db.Model):
     learner_id = db.Column(db.Integer, db.ForeignKey('learners.id'), nullable=False)
     assessment_date = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Cognitive domain scores (0-100)
     attention_score = db.Column(db.Float, default=0)
     impulse_control_score = db.Column(db.Float, default=0)
     working_memory_score = db.Column(db.Float, default=0)
@@ -219,27 +230,21 @@ class CognitiveAssessment(db.Model):
     problem_solving_score = db.Column(db.Float, default=0)
     language_score = db.Column(db.Float, default=0)
     
-    # ADHD indicators
     adhd_risk_score = db.Column(db.Float, default=0)
     attention_deficit_risk = db.Column(db.Float, default=0)
     hyperactivity_risk = db.Column(db.Float, default=0)
     impulsivity_risk = db.Column(db.Float, default=0)
     
-    # Percentile rankings
     attention_percentile = db.Column(db.Float, default=50)
     memory_percentile = db.Column(db.Float, default=50)
     
-    # Recommendations (JSON)
     recommendations = db.Column(db.Text, default='[]')
     strengths = db.Column(db.Text, default='[]')
     concerns = db.Column(db.Text, default='[]')
     
-    # Report text
     summary_report = db.Column(db.Text, default='')
     
     learner = db.relationship('Learner', backref='assessments')
-
-# ==================== BADGE MODELS ====================
 
 class Badge(db.Model):
     __tablename__ = 'badges'
@@ -248,13 +253,12 @@ class Badge(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(200), nullable=False)
     icon = db.Column(db.String(50), nullable=False)
-    condition_type = db.Column(db.String(50))  # 'games_completed', 'perfect_score', 'streak', 'category_master'
+    condition_type = db.Column(db.String(50))
     condition_value = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
         return f'<Badge {self.name}>'
-
 
 class LearnerBadge(db.Model):
     __tablename__ = 'learner_badges'
@@ -264,7 +268,6 @@ class LearnerBadge(db.Model):
     badge_id = db.Column(db.Integer, db.ForeignKey('badges.id'), nullable=False)
     earned_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationships
     learner = db.relationship('Learner', backref=db.backref('badges_earned_ref', lazy=True))
     badge = db.relationship('Badge', backref=db.backref('earned_by', lazy=True))
     

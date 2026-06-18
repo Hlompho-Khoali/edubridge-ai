@@ -109,6 +109,33 @@
         color: #4a5568;
     }
     
+    .accessibility-options {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+    
+    .accessibility-btn {
+        padding: 10px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: white;
+        font-size: 0.85rem;
+    }
+    
+    .accessibility-btn:hover {
+        border-color: #667eea;
+        background: #f7faff;
+    }
+    
+    .accessibility-btn.selected {
+        border-color: #667eea;
+        background: #e7f3ff;
+    }
+    
     .loading {
         text-align: center;
         padding: 40px;
@@ -175,17 +202,17 @@
         color: #2b6cb0;
     }
     
-    .generated-preview .game-meta .difficulty-beginner {
+    .generated-preview .game-meta .difficulty-Beginner {
         background: #c6f6d5;
         color: #276749;
     }
     
-    .generated-preview .game-meta .difficulty-intermediate {
+    .generated-preview .game-meta .difficulty-Intermediate {
         background: #fefcbf;
         color: #975a16;
     }
     
-    .generated-preview .game-meta .difficulty-advanced {
+    .generated-preview .game-meta .difficulty-Advanced {
         background: #fed7d7;
         color: #9b2c2c;
     }
@@ -317,6 +344,9 @@
         .game-types {
             grid-template-columns: repeat(2, 1fr);
         }
+        .accessibility-options {
+            grid-template-columns: repeat(2, 1fr);
+        }
         .generator-card {
             padding: 20px;
         }
@@ -325,42 +355,63 @@
 
 <div class="generator-container">
     <div class="generator-card">
-        <h2 style="color: #667eea; margin-bottom: 5px;">🤖 AI Game Generator</h2>
+        <h2 style="color: #667eea; margin-bottom: 5px;">AI Game Generator</h2>
         <p style="color: #718096; margin-bottom: 25px;">
-            Describe what kind of educational game you want, and AI will create it instantly!
+            Create personalized educational games for Grade 1-3 learners with accessibility features
         </p>
         
         <form id="generateForm" method="POST" action="{{ url_for('ai_generate_game') }}">
             <!-- Topic -->
             <div class="form-group">
-                <label for="topic">📚 Topic</label>
+                <label for="topic">Topic</label>
                 <input type="text" id="topic" name="topic" required 
-                       placeholder="e.g., Space, Animals, Math, Planets, Fractions..."
+                       placeholder="e.g., Space, Animals, Math, Planets..."
                        value="{{ request.form.get('topic', '') }}">
-                <div class="hint">💡 Try: "Multiplication", "Solar System", "Emotions", "Shapes"</div>
+                <div class="hint">Try: "Space", "Animals", "Math", "Colors", "Dinosaurs"</div>
                 <div class="example-topics">
-                    <span class="example-topic" onclick="document.getElementById('topic').value='Space'">🚀 Space</span>
-                    <span class="example-topic" onclick="document.getElementById('topic').value='Animals'">🐘 Animals</span>
-                    <span class="example-topic" onclick="document.getElementById('topic').value='Multiplication'">✖️ Math</span>
-                    <span class="example-topic" onclick="document.getElementById('topic').value='Emotions'">😊 Emotions</span>
-                    <span class="example-topic" onclick="document.getElementById('topic').value='Colors'">🎨 Colors</span>
-                    <span class="example-topic" onclick="document.getElementById('topic').value='Dinosaurs'">🦕 Dinosaurs</span>
+                    <span class="example-topic" onclick="document.getElementById('topic').value='Space'">Space</span>
+                    <span class="example-topic" onclick="document.getElementById('topic').value='Animals'">Animals</span>
+                    <span class="example-topic" onclick="document.getElementById('topic').value='Math'">Math</span>
+                    <span class="example-topic" onclick="document.getElementById('topic').value='Colors'">Colors</span>
+                    <span class="example-topic" onclick="document.getElementById('topic').value='Dinosaurs'">Dinosaurs</span>
                 </div>
             </div>
             
-            <!-- Grade -->
+            <!-- Grade Level -->
             <div class="form-group">
-                <label for="grade">📊 Grade Level</label>
+                <label for="grade">Grade Level</label>
                 <select id="grade" name="grade">
                     <option value="1">Grade 1 (Age 6-7)</option>
                     <option value="2" selected>Grade 2 (Age 7-8)</option>
                     <option value="3">Grade 3 (Age 8-9)</option>
                 </select>
+                <div class="hint">Select the appropriate grade level for your students</div>
+            </div>
+            
+            <!-- Accessibility Type -->
+            <div class="form-group">
+                <label>Accessibility Support</label>
+                <div class="accessibility-options">
+                    <div class="accessibility-btn selected" data-type="default" onclick="selectAccessibility(this)">
+                        Standard
+                    </div>
+                    <div class="accessibility-btn" data-type="adhd" onclick="selectAccessibility(this)">
+                        ADHD Support
+                    </div>
+                    <div class="accessibility-btn" data-type="dyslexia" onclick="selectAccessibility(this)">
+                        Dyslexia Support
+                    </div>
+                    <div class="accessibility-btn" data-type="cognitive_pace" onclick="selectAccessibility(this)">
+                        Cognitive Pace
+                    </div>
+                </div>
+                <input type="hidden" id="access_type" name="access_type" value="default">
+                <div class="hint" id="accessDescription">Standard game without special accessibility features</div>
             </div>
             
             <!-- Game Type -->
             <div class="form-group">
-                <label>🎯 Game Type</label>
+                <label>Game Type</label>
                 <div class="game-types">
                     <div class="game-type-btn selected" data-type="memory" onclick="selectType(this)">
                         <span class="icon">🧠</span>
@@ -370,17 +421,17 @@
                         <span class="icon">🔢</span>
                         <span class="name">Math</span>
                     </div>
-                    <div class="game-type-btn" data-type="vocabulary" onclick="selectType(this)">
+                    <div class="game-type-btn" data-type="language" onclick="selectType(this)">
                         <span class="icon">📖</span>
-                        <span class="name">Vocabulary</span>
+                        <span class="name">Language</span>
                     </div>
                     <div class="game-type-btn" data-type="attention" onclick="selectType(this)">
                         <span class="icon">👀</span>
                         <span class="name">Attention</span>
                     </div>
-                    <div class="game-type-btn" data-type="logic" onclick="selectType(this)">
-                        <span class="icon">🧩</span>
-                        <span class="name">Logic</span>
+                    <div class="game-type-btn" data-type="sensory" onclick="selectType(this)">
+                        <span class="icon">🎨</span>
+                        <span class="name">Sensory</span>
                     </div>
                     <div class="game-type-btn" data-type="default" onclick="selectType(this)">
                         <span class="icon">🎮</span>
@@ -392,31 +443,29 @@
             
             <!-- Number of Questions -->
             <div class="form-group">
-                <label for="num_questions">📝 Number of Questions</label>
+                <label for="num_questions">Number of Questions</label>
                 <select id="num_questions" name="num_questions">
-                    <option value="5">5 questions (10 points)</option>
-                    <option value="10">10 questions (20 points)</option>
-                    <option value="15" selected>15 questions (30 points)</option>
-                    <option value="20">20 questions (40 points)</option>
+                    <option value="5">5 questions</option>
+                    <option value="10" selected>10 questions</option>
+                    <option value="15">15 questions</option>
+                    <option value="20">20 questions</option>
                 </select>
+                <div class="hint">Recommended: 5-10 questions for younger learners</div>
             </div>
             
-            <!-- Submit -->
             <button type="submit" class="btn-generate" id="generateBtn">
-                🚀 Generate Game
+                Generate Game
             </button>
         </form>
         
-        <!-- Loading -->
         <div class="loading" id="loadingIndicator">
             <div class="spinner"></div>
-            <p style="color: #667eea; font-weight: 600;">🤔 AI is creating your game...</p>
+            <p style="color: #667eea; font-weight: 600;">AI is creating your game...</p>
             <p style="color: #718096; font-size: 0.9rem;">This may take 5-10 seconds</p>
         </div>
         
-        <!-- Preview -->
         <div class="generated-preview" id="gamePreview">
-            <h3 style="color: #667eea; margin-bottom: 5px;">✅ Game Generated!</h3>
+            <h3 style="color: #667eea; margin-bottom: 5px;">Game Generated!</h3>
             <div id="previewContent"></div>
         </div>
     </div>
@@ -431,19 +480,33 @@ function selectType(el) {
     document.getElementById('game_type').value = el.dataset.type;
 }
 
-// Show loading on form submit
+function selectAccessibility(el) {
+    document.querySelectorAll('.accessibility-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    el.classList.add('selected');
+    document.getElementById('access_type').value = el.dataset.type;
+    
+    const descriptions = {
+        'default': 'Standard game without special accessibility features',
+        'adhd': 'Short rounds, visual rewards, movement breaks for ADHD support',
+        'dyslexia': 'Read aloud, large font, high contrast, audio support for dyslexia',
+        'cognitive_pace': 'Adjustable speed, multiple attempts, step-by-step instructions'
+    };
+    document.getElementById('accessDescription').textContent = descriptions[el.dataset.type] || '';
+}
+
 document.getElementById('generateForm').addEventListener('submit', function(e) {
     const btn = document.getElementById('generateBtn');
     const loading = document.getElementById('loadingIndicator');
     const preview = document.getElementById('gamePreview');
     
     btn.disabled = true;
-    btn.textContent = '⏳ Generating...';
+    btn.textContent = 'Generating...';
     loading.style.display = 'block';
     preview.classList.remove('show');
 });
 
-// Check for flash messages with generated game data
 document.addEventListener('DOMContentLoaded', function() {
     {% if generated_game %}
         showPreview({{ generated_game|tojson }});
@@ -454,16 +517,25 @@ function showPreview(game) {
     const preview = document.getElementById('gamePreview');
     const content = document.getElementById('previewContent');
     
+    const accessLabels = {
+        'default': 'Standard',
+        'adhd': 'ADHD Support',
+        'dyslexia': 'Dyslexia Support',
+        'cognitive_pace': 'Cognitive Pace Support'
+    };
+    
     let html = `
-        <div class="game-name">🎮 ${game.name}</div>
+        <div class="game-name">${game.name}</div>
         <div class="game-description">${game.description}</div>
         <div class="game-meta">
-            <span class="category">📂 ${game.category}</span>
-            <span class="difficulty-${game.difficulty}">${game.difficulty.charAt(0).toUpperCase() + game.difficulty.slice(1)}</span>
-            <span>📝 ${game.questions.length} questions</span>
-            <span>⭐ ${game.questions.length * 2} points</span>
+            <span class="category">${game.category}</span>
+            <span class="difficulty-${game.difficulty}">${game.difficulty}</span>
+            <span>Grade ${game.grade_level}</span>
+            <span>${game.questions.length} questions</span>
+            <span>${game.questions.length * 2} points</span>
+            <span>${accessLabels[game.subcategory] || 'Standard'}</span>
         </div>
-        <h4 style="margin: 15px 0 10px; color: #2d3748;">📋 Questions Preview</h4>
+        <h4 style="margin: 15px 0 10px; color: #2d3748;">Questions Preview</h4>
     `;
     
     game.questions.forEach((q, index) => {
@@ -473,25 +545,24 @@ function showPreview(game) {
                 <div class="q-text">${q.question}</div>
                 <div class="q-options">
                     ${q.options.map(opt => `
-                        <span class="${opt === q.correct ? 'correct' : ''}">${opt}</span>
+                        <span class="${opt === q.correct_answer ? 'correct' : ''}">${opt}</span>
                     `).join('')}
                 </div>
             </div>
         `;
     });
     
-    // ✅ FIXED: Only show View Game button if game has an ID
     {% if generated_game and generated_game.id %}
         html += `
             <div class="actions">
-                <a href="{{ url_for('view_game', game_id=generated_game.id) }}" class="btn-success">✅ View Game</a>
-                <a href="{{ url_for('educator_dashboard') }}" class="btn-secondary">← Back to Dashboard</a>
+                <a href="{{ url_for('view_game', game_id=generated_game.id) }}" class="btn-success">View Game</a>
+                <a href="{{ url_for('educator_dashboard') }}" class="btn-secondary">Back to Dashboard</a>
             </div>
         `;
     {% else %}
         html += `
             <div class="actions">
-                <a href="{{ url_for('educator_dashboard') }}" class="btn-secondary">← Back to Dashboard</a>
+                <a href="{{ url_for('educator_dashboard') }}" class="btn-secondary">Back to Dashboard</a>
             </div>
         `;
     {% endif %}
