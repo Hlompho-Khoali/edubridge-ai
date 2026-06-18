@@ -17,28 +17,50 @@ from ai_config import AIConfig
 from utils.email import EmailService
 from utils.badges import BadgeService
 
-# app.py - Complete initialization with auto-migration
+# Load environment variables
+load_dotenv()
 
-# Initialize extensions
+# ==================== CREATE FLASK APP ====================
+app = Flask(__name__)
+
+# ==================== DATABASE CONFIGURATION ====================
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+psycopg://', 1)
+    elif '+psycopg' not in DATABASE_URL and not DATABASE_URL.startswith('sqlite'):
+        DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    print(f"✅ Using PostgreSQL with psycopg: {DATABASE_URL[:50]}...")
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+    print("⚠️ Using SQLite (local development)")
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('RENDER', 'false').lower() == 'true'
+app.config['REMEMBER_COOKIE_SECURE'] = os.environ.get('RENDER', 'false').lower() == 'true'
+
+# ==================== INITIALIZE EXTENSIONS ====================
 db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# ===== AUTO-MIGRATION FUNCTION =====
+# ==================== AUTO-MIGRATION FUNCTION ====================
 def run_migrations():
     """Check and add missing columns to games table on startup"""
     try:
         from sqlalchemy import inspect, text
         
         with app.app_context():
-            # Check if games table exists
             inspector = inspect(db.engine)
             existing_columns = [col['name'] for col in inspector.get_columns('games')]
             
             print(f"🔍 Existing columns: {existing_columns}")
             
-            # Columns to add if they don't exist
             new_columns = {
                 'grade_level': 'INTEGER DEFAULT 1',
                 'subcategory': 'VARCHAR(50) DEFAULT \'default\'',
@@ -70,99 +92,16 @@ def run_migrations():
     except Exception as e:
         print(f"⚠️ Migration warning: {e}")
 
-# ===== RUN MIGRATION ON STARTUP =====
+# ==================== RUN MIGRATION ON STARTUP ====================
 with app.app_context():
     run_migrations()
 
-# ===== INITIALIZE DATABASE =====
-with app.app_context():
-    db.create_all()
-    print("✅ Database tables created/verified")
-    
-    # Create super admin if not exists
-    admin_user = User.query.filter_by(email='admin@edubridge.com').first()
-    if not admin_user:
-        admin_user = User(
-            email='admin@edubridge.com',
-            name='Super Admin',
-            role='admin'
-        )
-        admin_user.set_password('admin123')
-        db.session.add(admin_user)
-        db.session.flush()
-        
-        admin_profile = Admin(
-            user_id=admin_user.id,
-            employee_id='ADMIN001',
-            department='System Administration'
-        )
-        db.session.add(admin_profile)
-        db.session.commit()
-        print("✅ Super Admin created: admin@edubridge.com / admin123")
-    
-    # Add default games if not exists
-    games_data = get_all_games()
-    for game_data in games_data:
-        game = Game.query.filter_by(name=game_data['name']).first()
-        if not game:
-            game = Game(
-                name=game_data['name'],
-                description=game_data['description'],
-                category=game_data.get('category', 'General'),
-                questions=json.dumps(game_data['questions']),
-                passing_score=15,
-                time_limit_minutes=60,
-                difficulty=game_data.get('difficulty', 'Intermediate')
-            )
-            db.session.add(game)
-    
-    # Initialize badges
-    BadgeService.initialize_badges()
-    
-    db.session.commit()
-    print(f"✅ Database initialized with {len(games_data)} games")
-
-# Load environment variables
-load_dotenv()
-
-# ==================== CREATE FLASK APP FIRST ====================
-app = Flask(__name__)
-
-# ==================== DATABASE CONFIGURATION ====================
-
-DATABASE_URL = os.environ.get('DATABASE_URL')
-
-if DATABASE_URL:
-    # For psycopg, use postgresql+psycopg:// format
-    if DATABASE_URL.startswith('postgres://'):
-        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+psycopg://', 1)
-    # If it already has +psycopg, keep it as is
-    elif '+psycopg' not in DATABASE_URL and not DATABASE_URL.startswith('sqlite'):
-        # Convert standard postgresql:// to postgresql+psycopg://
-        DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
-    
-    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-    print(f"✅ Using PostgreSQL with psycopg: {DATABASE_URL[:50]}...")
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-    print("⚠️ Using SQLite (local development)")
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['SESSION_COOKIE_SECURE'] = os.environ.get('RENDER', 'false').lower() == 'true'
-app.config['REMEMBER_COOKIE_SECURE'] = os.environ.get('RENDER', 'false').lower() == 'true'
-
-# Initialize extensions
-db.init_app(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-
+# ==================== USER LOADER ====================
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
-# Custom Jinja2 filter
+# ==================== CUSTOM JINJA2 FILTER ====================
 @app.template_filter('fromjson')
 def from_json_filter(value):
     if value:
@@ -172,7 +111,7 @@ def from_json_filter(value):
             return []
     return []
 
-# Initialize database with app context
+# ==================== INITIALIZE DATABASE ====================
 with app.app_context():
     db.create_all()
     print("Database tables created/verified")
@@ -229,27 +168,22 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # Get role parameter from URL (e.g., ?role=parent)
     role = request.args.get('role', '')
     
     if request.method == 'POST':
         email_or_id = request.form.get('email')
         password = request.form.get('password')
         
-        # Try to find user by email
         user = User.query.filter_by(email=email_or_id).first()
         
-        # If not found and it might be a learner ID number
         if not user and email_or_id.isdigit() and len(email_or_id) == 13:
             learner = Learner.query.filter_by(id_number=email_or_id).first()
             if learner:
                 user = learner.user
         
-        # Check password and login
         if user and user.check_password(password):
             login_user(user)
             
-            # Redirect based on role
             if user.role == 'educator':
                 return redirect(url_for('educator_dashboard'))
             elif user.role == 'parent':
@@ -684,7 +618,6 @@ def admin_wipe_games():
         return redirect(url_for('index'))
     
     try:
-        # Delete in correct order
         results_count = TestResult.query.count()
         TestResult.query.delete()
         
@@ -696,11 +629,11 @@ def admin_wipe_games():
         
         db.session.commit()
         
-        flash(f'✅ All games wiped! ({games_count} games, {assignments_count} assignments, {results_count} results deleted)', 'success')
+        flash(f'All games wiped! ({games_count} games, {assignments_count} assignments, {results_count} results deleted)', 'success')
         
     except Exception as e:
         db.session.rollback()
-        flash(f'❌ Error: {e}', 'error')
+        flash(f'Error: {e}', 'error')
     
     return redirect(url_for('admin_dashboard'))
 
@@ -774,7 +707,6 @@ def assign_test():
             flash('Educator profile not found.', 'error')
             return redirect(url_for('educator_dashboard'))
         
-        # ✅ Convert to integers to fix PostgreSQL type mismatch
         learner_id = request.form.get('learner_id')
         game_id = request.form.get('game_id')
         
@@ -782,11 +714,9 @@ def assign_test():
             flash('Please select both a student and a test.', 'error')
             return redirect(url_for('educator_dashboard'))
         
-        # Convert to integers
         learner_id = int(learner_id)
         game_id = int(game_id)
         
-        # Verify learner exists and is in educator's grade
         learner = Learner.query.get(learner_id)
         if not learner:
             flash('Student not found.', 'error')
@@ -796,13 +726,11 @@ def assign_test():
             flash('This student is not in your grade.', 'error')
             return redirect(url_for('educator_dashboard'))
         
-        # Verify game exists
         game = Game.query.get(game_id)
         if not game:
             flash('Game not found.', 'error')
             return redirect(url_for('educator_dashboard'))
         
-        # Check for existing assignment
         existing = TestAssignment.query.filter_by(
             game_id=game_id,
             learner_id=learner_id,
@@ -964,10 +892,7 @@ def submit_test(assignment_id):
     
     db.session.commit()
     
-    # Award badges
     BadgeService.check_and_award_badges(learner)
-    
-    # Send email notification
     EmailService.send_game_completion_email(learner, game, percentage, passed)
     
     flash(f'Test submitted! Score: {score}/{total} ({percentage:.1f}%)', 'success')
@@ -1378,14 +1303,12 @@ def analytics_dashboard():
     educator = Educator.query.filter_by(user_id=current_user.id).first()
     learners = Learner.query.filter_by(grade=educator.grade_teaching).all()
     
-    # Get all assignments for these learners
     learner_ids = [l.id for l in learners]
     assignments = TestAssignment.query.filter(
         TestAssignment.learner_id.in_(learner_ids),
         TestAssignment.status == 'completed'
     ).all()
     
-    # Calculate stats
     scores = []
     for a in assignments:
         result = TestResult.query.filter_by(assignment_id=a.id).first()
@@ -1394,7 +1317,6 @@ def analytics_dashboard():
     
     avg_score = sum(scores) / len(scores) if scores else 0
     
-    # Calculate trend
     if len(scores) > 5:
         recent = scores[-3:]
         previous = scores[-6:-3]
@@ -1412,7 +1334,6 @@ def analytics_dashboard():
     else:
         trend = 'steady'
     
-    # Calculate pass rate
     passed = [s for s in scores if s >= 50]
     pass_rate = len(passed) / len(scores) * 100 if scores else 0
     
@@ -1424,7 +1345,6 @@ def analytics_dashboard():
         'pass_rate': round(pass_rate, 1)
     }
     
-    # Chart data
     chart_data = {
         'dates': [f'Day {i+1}' for i in range(min(len(scores), 10))],
         'scores': scores[-10:] if scores else [0],
@@ -1451,7 +1371,6 @@ def leaderboard():
     
     grade = request.args.get('grade', '2')
     
-    # Get all learners in this grade
     learners = Learner.query.filter_by(grade=int(grade)).all()
     
     leaderboard_data = []
@@ -1476,7 +1395,6 @@ def leaderboard():
                 'badges': learner.badge_count if hasattr(learner, 'badge_count') else 0
             })
     
-    # Sort by average score
     leaderboard_data.sort(key=lambda x: x['avg_score'], reverse=True)
     
     grades = [1, 2, 3]
@@ -1510,14 +1428,12 @@ def ai_generate_game():
             return redirect(url_for('ai_generate_game'))
         
         try:
-            # Generate game with accessibility features
             game_data = AIService.generate_game(topic, grade, access_type, num_questions)
             
             if not game_data or not game_data.get('questions'):
                 flash('Failed to generate game. Please try again.', 'error')
                 return redirect(url_for('ai_generate_game'))
             
-            # Ensure all questions have correct_answer
             questions = game_data.get('questions', [])
             for q in questions:
                 if 'correct_answer' not in q or q['correct_answer'] == '':
@@ -1528,10 +1444,8 @@ def ai_generate_game():
                 if 'points' not in q:
                     q['points'] = 2
             
-            # Mark all existing games as NOT latest
             Game.query.update({Game.is_latest: False})
             
-            # Save new game with accessibility features
             game = Game(
                 name=game_data['name'],
                 description=game_data['description'],
@@ -1575,7 +1489,6 @@ def view_game(game_id):
     game = Game.query.get_or_404(game_id)
     questions = json.loads(game.questions) if game.questions else []
     
-    # Get students for assignment modal
     students = []
     if current_user.role == 'educator':
         educator = Educator.query.filter_by(user_id=current_user.id).first()
@@ -1597,7 +1510,7 @@ def view_game(game_id):
 @app.route('/game/assign/<int:game_id>', methods=['POST'])
 @login_required
 def assign_ai_game(game_id):
-    """Assign an AI-generated game to selected students - FIXED: Convert IDs to integers"""
+    """Assign an AI-generated game to selected students"""
     if current_user.role != 'educator':
         flash('Access denied.', 'error')
         return redirect(url_for('index'))
@@ -1610,21 +1523,18 @@ def assign_ai_game(game_id):
         
         game = Game.query.get_or_404(game_id)
         
-        # Get selected student IDs and convert to integers
         student_ids = request.form.getlist('student_ids')
         
         if not student_ids:
             flash('Please select at least one student.', 'warning')
             return redirect(url_for('view_game', game_id=game_id))
         
-        # ✅ Convert to integers
         student_ids = [int(id) for id in student_ids if id]
         
         assigned_count = 0
         already_assigned = 0
         
         for student_id in student_ids:
-            # Verify student exists and is in educator's grade
             learner = Learner.query.get(student_id)
             if not learner:
                 continue
@@ -1632,7 +1542,6 @@ def assign_ai_game(game_id):
             if learner.grade != educator.grade_teaching:
                 continue
             
-            # Check if already assigned
             existing = TestAssignment.query.filter_by(
                 game_id=game.id,
                 learner_id=student_id,
@@ -1644,7 +1553,6 @@ def assign_ai_game(game_id):
                 already_assigned += 1
                 continue
             
-            # Create assignment
             assignment = TestAssignment(
                 game_id=game.id,
                 learner_id=student_id,
@@ -1657,9 +1565,9 @@ def assign_ai_game(game_id):
         db.session.commit()
         
         if assigned_count > 0:
-            flash(f'✅ Game "{game.name}" assigned to {assigned_count} student(s)!', 'success')
+            flash(f'Game "{game.name}" assigned to {assigned_count} student(s)!', 'success')
         if already_assigned > 0:
-            flash(f'⚠️ {already_assigned} student(s) already had this game assigned.', 'info')
+            flash(f'{already_assigned} student(s) already had this game assigned.', 'info')
         if assigned_count == 0 and already_assigned == 0:
             flash('No students were assigned. Please select valid students.', 'warning')
         
@@ -1698,7 +1606,7 @@ def enhance_game(game_id):
         game.description = enhanced.get('description', game.description)
         game.questions = json.dumps(enhanced['questions'])
         db.session.commit()
-        flash(f'✅ Game "{game.name}" enhanced successfully!', 'success')
+        flash(f'Game "{game.name}" enhanced successfully!', 'success')
     else:
         flash('Could not enhance game. Please try again.', 'warning')
     
@@ -1713,7 +1621,6 @@ def view_latest_game():
         flash('Access denied.', 'error')
         return redirect(url_for('index'))
     
-    # Get the latest game
     game = Game.query.filter_by(is_latest=True).first()
     
     if not game:
@@ -1840,14 +1747,12 @@ def save_game_result():
 def ai_recommendations(learner_id):
     """Get AI-powered recommendations for a learner"""
     
-    # Check permissions (educator or parent)
     if current_user.role not in ['educator', 'parent']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
     learner = Learner.query.get_or_404(learner_id)
     
-    # Verify access (educator teaches this grade, parent has this child)
     if current_user.role == 'educator':
         educator = Educator.query.filter_by(user_id=current_user.id).first()
         if learner.grade != educator.grade_teaching:
@@ -1860,7 +1765,6 @@ def ai_recommendations(learner_id):
             flash('Access denied', 'error')
             return redirect(url_for('parent_dashboard'))
     
-    # Get learner data
     assignments = TestAssignment.query.filter_by(learner_id=learner.id).all()
     completed = [a for a in assignments if a.status == 'completed']
     
@@ -1882,10 +1786,8 @@ def ai_recommendations(learner_id):
     
     avg_score = sum(scores) / len(scores) if scores else 0
     
-    # Reverse to get chronological order (oldest first)
     past_scores = past_scores[::-1]
     
-    # Prepare data for AI
     learner_data = {
         'name': learner.user.name,
         'grade': learner.grade,
@@ -1897,7 +1799,6 @@ def ai_recommendations(learner_id):
         'game_history': game_history
     }
     
-    # Get AI recommendations
     recommendations = AIService.get_recommendations(learner_data)
     
     if not recommendations:
@@ -1999,14 +1900,12 @@ def educator_ai_chat():
     if not question:
         return jsonify({'error': 'Please ask a question'}), 400
     
-    # Get educator and their students
     educator = Educator.query.filter_by(user_id=current_user.id).first()
     if not educator:
         return jsonify({'error': 'Educator profile not found'}), 404
     
     learners = Learner.query.filter_by(grade=educator.grade_teaching).all()
     
-    # Build learners data with performance
     learners_data = []
     for learner in learners:
         assignments = TestAssignment.query.filter_by(learner_id=learner.id).all()
@@ -2036,7 +1935,6 @@ def educator_ai_chat():
             'completed_games': completed_games
         })
     
-    # Get AI response
     response = AIService.get_educator_recommendations(question, educator, learners_data)
     
     return jsonify({'response': response})
