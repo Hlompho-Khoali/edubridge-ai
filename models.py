@@ -92,6 +92,18 @@ class Learner(db.Model):
     # Accessibility preferences
     accessibility_preferences = db.Column(db.Text, default='{}')
     
+    # NEW: Disability tracking
+    disability_type = db.Column(db.String(50), default='none')
+    disability_notes = db.Column(db.Text, nullable=True)
+    
+    # NEW: Assessment results
+    assessment_completed = db.Column(db.Boolean, default=False)
+    assessment_date = db.Column(db.DateTime, nullable=True)
+    cognitive_scores = db.Column(db.Text, default='{}')
+    condition_probabilities = db.Column(db.Text, default='{}')
+    recommendations = db.Column(db.Text, default='[]')
+    last_assessment = db.Column(db.DateTime, nullable=True)
+    
     @property
     def current_streak(self):
         """Calculate current streak"""
@@ -142,6 +154,30 @@ class Learner(db.Model):
         if self.badges_earned:
             return [lb.badge for lb in self.badges_earned]
         return []
+    
+    def get_cognitive_scores(self):
+        """Get cognitive scores as dict"""
+        return json.loads(self.cognitive_scores) if self.cognitive_scores else {}
+    
+    def set_cognitive_scores(self, scores):
+        """Set cognitive scores from dict"""
+        self.cognitive_scores = json.dumps(scores)
+    
+    def get_condition_probabilities(self):
+        """Get condition probabilities as dict"""
+        return json.loads(self.condition_probabilities) if self.condition_probabilities else {}
+    
+    def set_condition_probabilities(self, probs):
+        """Set condition probabilities from dict"""
+        self.condition_probabilities = json.dumps(probs)
+    
+    def get_recommendations(self):
+        """Get recommendations as list"""
+        return json.loads(self.recommendations) if self.recommendations else []
+    
+    def set_recommendations(self, recs):
+        """Set recommendations from list"""
+        self.recommendations = json.dumps(recs)
 
 class Game(db.Model):
     __tablename__ = 'games'
@@ -168,6 +204,10 @@ class Game(db.Model):
     movement_breaks = db.Column(db.Boolean, default=False)
     progress_tracking = db.Column(db.Boolean, default=True)
     max_questions = db.Column(db.Integer, default=10)
+    
+    # NEW: Disability-specific fields
+    disability_type = db.Column(db.String(50), default='none')
+    recommended_for = db.Column(db.String(50), default='all')
     
     def get_questions(self):
         return json.loads(self.questions)
@@ -223,6 +263,7 @@ class CognitiveAssessment(db.Model):
     learner_id = db.Column(db.Integer, db.ForeignKey('learners.id'), nullable=False)
     assessment_date = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Cognitive domain scores
     attention_score = db.Column(db.Float, default=0)
     impulse_control_score = db.Column(db.Float, default=0)
     working_memory_score = db.Column(db.Float, default=0)
@@ -230,18 +271,20 @@ class CognitiveAssessment(db.Model):
     problem_solving_score = db.Column(db.Float, default=0)
     language_score = db.Column(db.Float, default=0)
     
+    # ADHD indicators
     adhd_risk_score = db.Column(db.Float, default=0)
     attention_deficit_risk = db.Column(db.Float, default=0)
     hyperactivity_risk = db.Column(db.Float, default=0)
     impulsivity_risk = db.Column(db.Float, default=0)
     
+    # Percentile rankings
     attention_percentile = db.Column(db.Float, default=50)
     memory_percentile = db.Column(db.Float, default=50)
     
+    # Recommendations and reports
     recommendations = db.Column(db.Text, default='[]')
     strengths = db.Column(db.Text, default='[]')
     concerns = db.Column(db.Text, default='[]')
-    
     summary_report = db.Column(db.Text, default='')
     
     learner = db.relationship('Learner', backref='assessments')

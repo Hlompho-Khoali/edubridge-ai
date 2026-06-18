@@ -22,7 +22,7 @@ def run_migration():
     with app.app_context():
         inspector = inspect(db.engine)
         
-        # ===== GAMES TABLE COLUMNS =====
+        # Games table columns
         games_columns = [col['name'] for col in inspector.get_columns('games')]
         games_new_columns = {
             'grade_level': 'INTEGER DEFAULT 1',
@@ -46,7 +46,7 @@ def run_migration():
                 except Exception as e:
                     print(f"Error adding {col_name} to games: {e}")
         
-        # ===== LEARNERS TABLE COLUMNS =====
+        # Learners table columns
         learners_columns = [col['name'] for col in inspector.get_columns('learners')]
         learners_new_columns = {
             'accessibility_preferences': 'TEXT DEFAULT \'{}\'',
