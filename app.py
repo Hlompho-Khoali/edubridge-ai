@@ -14,27 +14,30 @@ from ai_config import AIConfig
 from utils.email import EmailService
 from utils.badges import BadgeService
 
-# Load environment variables
+
 load_dotenv()
 
-# Create Flask app
-app = Flask(__name__)
+# ==================== DATABASE CONFIGURATION ====================
 
-# Database configuration for PostgreSQL on Render
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Fix for PostgreSQL URL (Render uses postgres:// not postgresql://)
+    # For psycopg, use postgresql+psycopg:// format
     if DATABASE_URL.startswith('postgres://'):
-        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+psycopg://', 1)
+    # If it already has +psycopg, keep it as is
+    elif '+psycopg' not in DATABASE_URL and not DATABASE_URL.startswith('sqlite'):
+        # Convert standard postgresql:// to postgresql+psycopg://
+        DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
+    
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    print(f"✅ Using PostgreSQL with psycopg: {DATABASE_URL[:50]}...")
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+    print("⚠️ Using SQLite (local development)")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['SESSION_COOKIE_SECURE'] = os.environ.get('RENDER', 'false').lower() == 'true'
-app.config['REMEMBER_COOKIE_SECURE'] = os.environ.get('RENDER', 'false').lower() == 'true'
 
 # Initialize extensions
 db.init_app(app)
@@ -1871,3 +1874,5 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     debug_mode = os.environ.get('RENDER', 'false').lower() != 'true'
     app.run(debug=debug_mode, host='0.0.0.0', port=port)
+
+    
