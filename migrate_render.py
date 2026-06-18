@@ -22,7 +22,7 @@ def run_migration():
     with app.app_context():
         inspector = inspect(db.engine)
         
-        # Add columns to games table
+        # ===== GAMES TABLE COLUMNS =====
         games_columns = [col['name'] for col in inspector.get_columns('games')]
         games_new_columns = {
             'grade_level': 'INTEGER DEFAULT 1',
@@ -32,7 +32,9 @@ def run_migration():
             'audio_support': 'BOOLEAN DEFAULT FALSE',
             'movement_breaks': 'BOOLEAN DEFAULT FALSE',
             'progress_tracking': 'BOOLEAN DEFAULT TRUE',
-            'max_questions': 'INTEGER DEFAULT 10'
+            'max_questions': 'INTEGER DEFAULT 10',
+            'disability_type': 'VARCHAR(50) DEFAULT \'none\'',
+            'recommended_for': 'VARCHAR(50) DEFAULT \'all\''
         }
         
         print("Checking games table...")
@@ -44,10 +46,18 @@ def run_migration():
                 except Exception as e:
                     print(f"Error adding {col_name} to games: {e}")
         
-        # Add columns to learners table
+        # ===== LEARNERS TABLE COLUMNS =====
         learners_columns = [col['name'] for col in inspector.get_columns('learners')]
         learners_new_columns = {
-            'accessibility_preferences': 'TEXT DEFAULT \'{}\''
+            'accessibility_preferences': 'TEXT DEFAULT \'{}\'',
+            'disability_type': 'VARCHAR(50) DEFAULT \'none\'',
+            'disability_notes': 'TEXT',
+            'assessment_completed': 'BOOLEAN DEFAULT FALSE',
+            'assessment_date': 'DATETIME',
+            'cognitive_scores': 'TEXT DEFAULT \'{}\'',
+            'condition_probabilities': 'TEXT DEFAULT \'{}\'',
+            'recommendations': 'TEXT DEFAULT \'[]\'',
+            'last_assessment': 'DATETIME'
         }
         
         print("Checking learners table...")
