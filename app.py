@@ -17,6 +17,111 @@ from ai_config import AIConfig
 from utils.email import EmailService
 from utils.badges import BadgeService
 
+# app.py - Complete initialization with auto-migration
+
+# Initialize extensions
+db.init_app(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# ===== AUTO-MIGRATION FUNCTION =====
+def run_migrations():
+    """Check and add missing columns to games table on startup"""
+    try:
+        from sqlalchemy import inspect, text
+        
+        with app.app_context():
+            # Check if games table exists
+            inspector = inspect(db.engine)
+            existing_columns = [col['name'] for col in inspector.get_columns('games')]
+            
+            print(f"🔍 Existing columns: {existing_columns}")
+            
+            # Columns to add if they don't exist
+            new_columns = {
+                'grade_level': 'INTEGER DEFAULT 1',
+                'subcategory': 'VARCHAR(50) DEFAULT \'default\'',
+                'accessibility_features': 'TEXT DEFAULT \'{}\'',
+                'visual_style': 'VARCHAR(50) DEFAULT \'default\'',
+                'audio_support': 'BOOLEAN DEFAULT FALSE',
+                'movement_breaks': 'BOOLEAN DEFAULT FALSE',
+                'progress_tracking': 'BOOLEAN DEFAULT TRUE',
+                'max_questions': 'INTEGER DEFAULT 10'
+            }
+            
+            columns_to_add = [col for col in new_columns.keys() if col not in existing_columns]
+            
+            if columns_to_add:
+                print(f"🔄 Adding columns: {columns_to_add}")
+                
+                for col_name in columns_to_add:
+                    try:
+                        db.session.execute(text(f'ALTER TABLE games ADD COLUMN {col_name} {new_columns[col_name]}'))
+                        print(f"✅ Added column: {col_name}")
+                    except Exception as e:
+                        print(f"⚠️ Error adding {col_name}: {e}")
+                
+                db.session.commit()
+                print("✅ Migration completed successfully!")
+            else:
+                print("✅ All columns already exist!")
+                
+    except Exception as e:
+        print(f"⚠️ Migration warning: {e}")
+
+# ===== RUN MIGRATION ON STARTUP =====
+with app.app_context():
+    run_migrations()
+
+# ===== INITIALIZE DATABASE =====
+with app.app_context():
+    db.create_all()
+    print("✅ Database tables created/verified")
+    
+    # Create super admin if not exists
+    admin_user = User.query.filter_by(email='admin@edubridge.com').first()
+    if not admin_user:
+        admin_user = User(
+            email='admin@edubridge.com',
+            name='Super Admin',
+            role='admin'
+        )
+        admin_user.set_password('admin123')
+        db.session.add(admin_user)
+        db.session.flush()
+        
+        admin_profile = Admin(
+            user_id=admin_user.id,
+            employee_id='ADMIN001',
+            department='System Administration'
+        )
+        db.session.add(admin_profile)
+        db.session.commit()
+        print("✅ Super Admin created: admin@edubridge.com / admin123")
+    
+    # Add default games if not exists
+    games_data = get_all_games()
+    for game_data in games_data:
+        game = Game.query.filter_by(name=game_data['name']).first()
+        if not game:
+            game = Game(
+                name=game_data['name'],
+                description=game_data['description'],
+                category=game_data.get('category', 'General'),
+                questions=json.dumps(game_data['questions']),
+                passing_score=15,
+                time_limit_minutes=60,
+                difficulty=game_data.get('difficulty', 'Intermediate')
+            )
+            db.session.add(game)
+    
+    # Initialize badges
+    BadgeService.initialize_badges()
+    
+    db.session.commit()
+    print(f"✅ Database initialized with {len(games_data)} games")
+
 # Load environment variables
 load_dotenv()
 
@@ -1653,47 +1758,7 @@ def ai_analysis():
     
     return render_template('ai_analysis.html', learner=learner, analysis=analysis)
 
-# app.py - Add this right after db.create_all()
-def run_migrations():
-    """Check and add missing columns on startup"""
-    try:
-        from sqlalchemy import inspect, text
-        
-        inspector = inspect(db.engine)
-        existing_columns = [col['name'] for col in inspector.get_columns('games')]
-        
-        if 'grade_level' not in existing_columns:
-            print("Running database migration...")
-            new_columns = {
-                'grade_level': 'INTEGER DEFAULT 1',
-                'subcategory': 'VARCHAR(50) DEFAULT \'default\'',
-                'accessibility_features': 'TEXT DEFAULT \'{}\'',
-                'visual_style': 'VARCHAR(50) DEFAULT \'default\'',
-                'audio_support': 'BOOLEAN DEFAULT FALSE',
-                'movement_breaks': 'BOOLEAN DEFAULT FALSE',
-                'progress_tracking': 'BOOLEAN DEFAULT TRUE',
-                'max_questions': 'INTEGER DEFAULT 10'
-            }
-            
-            for col_name, col_type in new_columns.items():
-                if col_name not in existing_columns:
-                    db.session.execute(text(f'ALTER TABLE games ADD COLUMN {col_name} {col_type}'))
-                    print(f"Added column: {col_name}")
-            
-            db.session.commit()
-            print("Migration completed successfully!")
-    except Exception as e:
-        print(f"Migration warning: {e}")
 
-# Then in your app initialization:
-with app.app_context():
-    db.create_all()
-    print("Database tables created/verified")
-    
-    # Run migrations
-    run_migrations()
-    
-    # Rest of your initialization...
 # ==================== GAME ROUTES ====================
 
 @app.route('/game/penguin-says')
