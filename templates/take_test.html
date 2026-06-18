@@ -222,6 +222,26 @@
     .save-indicator.show {
         opacity: 1;
     }
+
+    .text-answer {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s;
+    }
+
+    .text-answer:focus {
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    .text-answer.answered {
+        border-color: #4caf50;
+        background: #f0fff4;
+    }
 </style>
 
 <div class="test-header">
@@ -255,6 +275,9 @@
     <div class="question-card" id="question_{{ question_index }}" data-qid="{{ question_index }}">
         <div class="question-number">Question {{ loop.index }}</div>
         <div class="question-text">{{ question.question }}</div>
+        
+        <!-- Check if question has options -->
+        {% if question.options %}
         <div class="options">
             {% for option in question.options %}
             {% set option_index = loop.index0 %}
@@ -264,11 +287,34 @@
             </div>
             {% endfor %}
         </div>
-        <div class="points-info">⭐ Points: {{ question.points }}</div>
+        {% elif question.type == 'true_false' or question.type == 'boolean' %}
+        <!-- True/False question -->
+        <div class="options">
+            <div class="option" data-option-value="True" onclick="selectOption(this, {{ question_index }}, 'True')">
+                <input type="radio" name="question_{{ question_index }}" value="True" id="q{{ question_index }}_true">
+                <label for="q{{ question_index }}_true">True</label>
+            </div>
+            <div class="option" data-option-value="False" onclick="selectOption(this, {{ question_index }}, 'False')">
+                <input type="radio" name="question_{{ question_index }}" value="False" id="q{{ question_index }}_false">
+                <label for="q{{ question_index }}_false">False</label>
+            </div>
+        </div>
+        {% else %}
+        <!-- Text input for open-ended questions -->
+        <div class="form-group">
+            <input type="text" class="text-answer" 
+                   name="question_{{ question_index }}" 
+                   placeholder="Type your answer here..."
+                   id="text_{{ question_index }}"
+                   oninput="onTextInput({{ question_index }}, this.value)">
+        </div>
+        {% endif %}
+        
+        <div class="points-info">Points: {{ question.points or 2 }}</div>
     </div>
     {% endfor %}
     
-    <button type="submit" class="btn btn-primary submit-btn">✅ Submit Test</button>
+    <button type="submit" class="btn btn-primary submit-btn">Submit Test</button>
 </form>
 
 <div class="warning">
@@ -322,11 +368,12 @@
         const minutes = Math.floor(timeLeft / 60);
         const seconds = timeLeft % 60;
         const timerDisplay = document.getElementById('timer');
-        timerDisplay.innerHTML = '⏱️ Time Remaining: ' + 
+        timerDisplay.innerHTML = 'Time Remaining: ' + 
             minutes.toString().padStart(2, '0') + ':' + 
             seconds.toString().padStart(2, '0');
         
         // Add warning classes
+        timerDisplay.classList.remove('warning', 'critical');
         if (timeLeft <= 300) { // 5 minutes
             timerDisplay.classList.add('warning');
         }
@@ -356,7 +403,7 @@
         }, 1000);
     }
     
-    // Answer selection and saving
+    // Answer selection for multiple choice
     function selectOption(element, questionIndex, selectedValue) {
         // Get the question card
         const questionCard = document.getElementById('question_' + questionIndex);
@@ -389,6 +436,23 @@
         showSaveIndicator();
     }
     
+    // Text input handler
+    function onTextInput(questionIndex, value) {
+        const textInput = document.getElementById('text_' + questionIndex);
+        if (textInput) {
+            if (value.trim() !== '') {
+                textInput.classList.add('answered');
+            } else {
+                textInput.classList.remove('answered');
+            }
+        }
+        
+        // Save answers immediately
+        saveAnswers();
+        updateProgress();
+        showSaveIndicator();
+    }
+    
     function saveAnswers() {
         const answers = {};
         
@@ -396,6 +460,7 @@
         for (let i = 0; i < totalQuestions; i++) {
             const questionCard = document.getElementById('question_' + i);
             if (questionCard) {
+                // Check for selected option
                 const selectedOption = questionCard.querySelector('.option.selected');
                 if (selectedOption) {
                     const value = selectedOption.getAttribute('data-option-value');
@@ -409,6 +474,12 @@
                         const optionDiv = questionCard.querySelector('.option[data-option-value="' + checkedRadio.value + '"]');
                         if (optionDiv) {
                             optionDiv.classList.add('selected');
+                        }
+                    } else {
+                        // Check for text input
+                        const textInput = document.getElementById('text_' + i);
+                        if (textInput && textInput.value.trim() !== '') {
+                            answers[i] = textInput.value.trim();
                         }
                     }
                 }
@@ -440,13 +511,23 @@
                 const value = answers[qid];
                 const questionCard = document.getElementById('question_' + qid);
                 if (questionCard) {
-                    const optionDiv = questionCard.querySelector('.option[data-option-value="' + value + '"]');
-                    if (optionDiv) {
-                        // Select the option
-                        optionDiv.classList.add('selected');
-                        const radioInput = optionDiv.querySelector('input[type="radio"]');
-                        if (radioInput) {
-                            radioInput.checked = true;
+                    // Check if it's a text answer
+                    const textInput = document.getElementById('text_' + qid);
+                    if (textInput) {
+                        textInput.value = value;
+                        if (value.trim() !== '') {
+                            textInput.classList.add('answered');
+                        }
+                    } else {
+                        // Try to find option with this value
+                        const optionDiv = questionCard.querySelector('.option[data-option-value="' + value + '"]');
+                        if (optionDiv) {
+                            // Select the option
+                            optionDiv.classList.add('selected');
+                            const radioInput = optionDiv.querySelector('input[type="radio"]');
+                            if (radioInput) {
+                                radioInput.checked = true;
+                            }
                         }
                     }
                 }
@@ -466,18 +547,21 @@
             if (questionCard) {
                 const selectedOption = questionCard.querySelector('.option.selected');
                 const checkedRadio = questionCard.querySelector('input[type="radio"]:checked');
-                if (selectedOption || checkedRadio) {
+                const textInput = document.getElementById('text_' + i);
+                const hasTextAnswer = textInput && textInput.value.trim() !== '';
+                
+                if (selectedOption || checkedRadio || hasTextAnswer) {
                     answeredCount++;
                 }
             }
         }
         
-        const percentage = (answeredCount / totalQuestions) * 100;
+        const percentage = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
         
         if (progressFill) {
-            progressFill.style.width = percentage + '%';
+            progressFill.style.width = Math.min(100, percentage) + '%';
         }
         if (progressText) {
             progressText.textContent = answeredCount + ' of ' + totalQuestions + ' questions answered';
@@ -492,7 +576,9 @@
                 if (questionCard) {
                     const selectedOption = questionCard.querySelector('.option.selected');
                     const checkedRadio = questionCard.querySelector('input[type="radio"]:checked');
-                    isAnswered = !!(selectedOption || checkedRadio);
+                    const textInput = document.getElementById('text_' + i);
+                    const hasTextAnswer = textInput && textInput.value.trim() !== '';
+                    isAnswered = !!(selectedOption || checkedRadio || hasTextAnswer);
                 }
                 if (isAnswered) {
                     navBtn.classList.add('answered');
@@ -500,13 +586,6 @@
                     navBtn.classList.remove('answered');
                 }
             }
-        }
-    }
-    
-    function highlightNavButton(qid) {
-        const navBtn = document.querySelector('.nav-btn[data-q="' + qid + '"]');
-        if (navBtn) {
-            navBtn.classList.add('answered');
         }
     }
     
@@ -539,7 +618,9 @@
             navButtons.forEach(btn => {
                 btn.classList.remove('current');
             });
-            navButtons[index].classList.add('current');
+            if (navButtons[index]) {
+                navButtons[index].classList.add('current');
+            }
             
             // Remove highlight after 2 seconds
             setTimeout(function() {
@@ -561,7 +642,10 @@
             if (questionCard) {
                 const selectedOption = questionCard.querySelector('.option.selected');
                 const checkedRadio = questionCard.querySelector('input[type="radio"]:checked');
-                if (selectedOption || checkedRadio) {
+                const textInput = document.getElementById('text_' + i);
+                const hasTextAnswer = textInput && textInput.value.trim() !== '';
+                
+                if (selectedOption || checkedRadio || hasTextAnswer) {
                     answeredCount++;
                 }
             }
@@ -584,6 +668,7 @@
     // Make functions global
     window.scrollToQuestion = scrollToQuestion;
     window.selectOption = selectOption;
+    window.onTextInput = onTextInput;
     
     // Initialize when page loads
     document.addEventListener('DOMContentLoaded', function() {
