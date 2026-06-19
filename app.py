@@ -687,6 +687,80 @@ def admin_wipe_games():
     
     return redirect(url_for('admin_dashboard'))
 
+    # ==================== ADMIN EDIT USER ROUTES ====================
+
+@app.route('/admin/edit-user/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+def admin_edit_user(user_id):
+    """Edit a user's details"""
+    if current_user.role != 'admin':
+        flash('Access denied.', 'error')
+        return redirect(url_for('login'))
+    
+    user = User.query.get_or_404(user_id)
+    
+    # Don't allow editing own admin account
+    if user.id == current_user.id:
+        flash('You cannot edit your own admin account.', 'error')
+        return redirect(url_for('admin_users'))
+    
+    # Get profile based on role
+    profile = None
+    if user.role == 'educator':
+        profile = Educator.query.filter_by(user_id=user.id).first()
+    elif user.role == 'parent':
+        profile = Parent.query.filter_by(user_id=user.id).first()
+    elif user.role == 'learner':
+        profile = Learner.query.filter_by(user_id=user.id).first()
+    
+    if request.method == 'POST':
+        try:
+            # Update common user fields
+            user.name = request.form.get('name', user.name)
+            user.email = request.form.get('email', user.email)
+            user.phone = request.form.get('phone', user.phone)
+            
+            # Update role-specific fields
+            if user.role == 'educator' and profile:
+                profile.phone_number = request.form.get('phone_number', profile.phone_number)
+                profile.grade_teaching = int(request.form.get('grade_teaching', profile.grade_teaching))
+                profile.qualification = request.form.get('qualification', profile.qualification)
+                profile.school = request.form.get('school', profile.school)
+                
+            elif user.role == 'parent' and profile:
+                profile.id_number = request.form.get('id_number', profile.id_number)
+                profile.occupation = request.form.get('occupation', profile.occupation)
+                
+            elif user.role == 'learner' and profile:
+                profile.id_number = request.form.get('id_number', profile.id_number)
+                profile.grade = int(request.form.get('grade', profile.grade))
+                profile.school = request.form.get('school', profile.school)
+                profile.disability_type = request.form.get('disability_type', profile.disability_type)
+                profile.disability_notes = request.form.get('disability_notes', profile.disability_notes)
+            
+            # Update password if provided
+            new_password = request.form.get('new_password')
+            if new_password and len(new_password) >= 6:
+                user.set_password(new_password)
+                flash('Password updated successfully.', 'success')
+            
+            db.session.commit()
+            flash(f'User {user.name} updated successfully!', 'success')
+            return redirect(url_for('admin_users'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating user: {str(e)}', 'error')
+    
+    return render_template('admin_edit_user.html', user=user, profile=profile)
+
+
+@app.route('/admin/delete-user/<int:user_id>')
+@login_required
+def admin_delete_user_redirect(user_id):
+    """Redirect to delete user (keeps existing functionality)"""
+    return redirect(url_for('admin_delete_user', user_id=user_id))
+
 # ==================== EDUCATOR ROUTES ====================
 
 @app.route('/educator/dashboard')

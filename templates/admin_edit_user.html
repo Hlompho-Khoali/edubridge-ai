@@ -1,159 +1,249 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Edit User{% endblock %}
+{% block title %}Edit User - {{ user.name }}{% endblock %}
 
 {% block content %}
 <style>
     .edit-container {
-        max-width: 600px;
+        max-width: 700px;
         margin: 0 auto;
-        padding: 20px;
     }
     
     .form-group {
         margin-bottom: 20px;
     }
     
-    label {
+    .form-group label {
         display: block;
+        font-weight: 600;
         margin-bottom: 5px;
-        font-weight: bold;
-        color: #333;
+        color: #2d3748;
     }
     
-    input, select {
+    .form-group input, .form-group select, .form-group textarea {
         width: 100%;
         padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
         font-size: 1rem;
+        transition: all 0.2s;
     }
     
-    .help-text {
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-group .hint {
         font-size: 0.8rem;
-        color: #666;
+        color: #a0aec0;
         margin-top: 5px;
     }
     
-    .btn-save {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 12px 30px;
-        font-size: 1rem;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
     }
     
-    .btn-save:hover {
+    .btn {
+        padding: 12px 30px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #5a67d8;
         transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+    
+    .role-badge {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .role-educator {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .role-parent {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .role-learner {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .actions {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+        flex-wrap: wrap;
+    }
+    
+    @media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
 <div class="edit-container">
-    <h2 style="color: #667eea; margin-bottom: 30px;">Edit User: {{ user.name }}</h2>
-    <p>Role: <strong>{{ user.role|capitalize }}</strong></p>
-    
-    <form method="POST">
-        <!-- Basic Information -->
-        <h3 style="color: #667eea; margin: 20px 0 15px;">Basic Information</h3>
-        
-        <div class="form-group">
-            <label for="name">Full Name</label>
-            <input type="text" id="name" name="name" value="{{ user.name }}" required>
+    <div class="card">
+        <div class="card-header">
+            <h2>Edit User</h2>
+            <p>
+                <span class="role-badge role-{{ user.role }}">
+                    {{ user.role|capitalize }}
+                </span>
+            </p>
         </div>
-        
-        <div class="form-group">
-            <label for="email">Email Address</label>
-            <input type="email" id="email" name="email" value="{{ user.email }}" required>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin_edit_user', user_id=user.id) }}">
+                
+                <!-- Common Fields -->
+                <h4>Personal Information</h4>
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" value="{{ user.name }}" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" value="{{ user.email }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="text" id="phone" name="phone" value="{{ user.phone or '' }}">
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <!-- Role-Specific Fields -->
+                {% if user.role == 'educator' and profile %}
+                <h4>Educator Information</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="phone_number">Phone Number</label>
+                        <input type="text" id="phone_number" name="phone_number" value="{{ profile.phone_number }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="grade_teaching">Grade Teaching</label>
+                        <select id="grade_teaching" name="grade_teaching">
+                            <option value="1" {% if profile.grade_teaching == 1 %}selected{% endif %}>Grade 1</option>
+                            <option value="2" {% if profile.grade_teaching == 2 %}selected{% endif %}>Grade 2</option>
+                            <option value="3" {% if profile.grade_teaching == 3 %}selected{% endif %}>Grade 3</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="qualification">Qualification</label>
+                        <input type="text" id="qualification" name="qualification" value="{{ profile.qualification or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="school">School</label>
+                        <input type="text" id="school" name="school" value="{{ profile.school or '' }}">
+                    </div>
+                </div>
+                
+                {% elif user.role == 'parent' and profile %}
+                <h4>Parent Information</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="id_number">ID Number</label>
+                        <input type="text" id="id_number" name="id_number" value="{{ profile.id_number }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="occupation">Occupation</label>
+                        <input type="text" id="occupation" name="occupation" value="{{ profile.occupation or '' }}">
+                    </div>
+                </div>
+                
+                {% elif user.role == 'learner' and profile %}
+                <h4>Learner Information</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="id_number">ID Number</label>
+                        <input type="text" id="id_number" name="id_number" value="{{ profile.id_number }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="grade">Grade</label>
+                        <select id="grade" name="grade">
+                            <option value="1" {% if profile.grade == 1 %}selected{% endif %}>Grade 1</option>
+                            <option value="2" {% if profile.grade == 2 %}selected{% endif %}>Grade 2</option>
+                            <option value="3" {% if profile.grade == 3 %}selected{% endif %}>Grade 3</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="school">School</label>
+                        <input type="text" id="school" name="school" value="{{ profile.school or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="disability_type">Disability Type</label>
+                        <select id="disability_type" name="disability_type">
+                            <option value="none" {% if profile.disability_type == 'none' %}selected{% endif %}>None</option>
+                            <option value="adhd" {% if profile.disability_type == 'adhd' %}selected{% endif %}>ADHD</option>
+                            <option value="dyslexia" {% if profile.disability_type == 'dyslexia' %}selected{% endif %}>Dyslexia</option>
+                            <option value="cognitive_pace" {% if profile.disability_type == 'cognitive_pace' %}selected{% endif %}>Cognitive Pace</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="disability_notes">Disability Notes</label>
+                    <textarea id="disability_notes" name="disability_notes" rows="2">{{ profile.disability_notes or '' }}</textarea>
+                </div>
+                {% endif %}
+                
+                <hr>
+                
+                <!-- Password Update -->
+                <h4>Change Password (Optional)</h4>
+                <div class="form-group">
+                    <label for="new_password">New Password</label>
+                    <input type="password" id="new_password" name="new_password" placeholder="Leave blank to keep current password">
+                    <div class="hint">Minimum 6 characters</div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="actions">
+                    <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+                
+            </form>
         </div>
-        
-        <div class="form-group">
-            <label for="phone">Phone Number</label>
-            <input type="tel" id="phone" name="phone" value="{{ user.phone or '' }}">
-        </div>
-        
-        <div class="form-group">
-            <label for="address">Address</label>
-            <input type="text" id="address" name="address" value="{{ user.address or '' }}">
-        </div>
-        
-        <!-- Role-Specific Fields -->
-        <h3 style="color: #667eea; margin: 20px 0 15px;">Role-Specific Information</h3>
-        
-        {% if user.role == 'educator' %}
-        <div class="form-group">
-            <label for="phone_number">Contact Phone</label>
-            <input type="tel" id="phone_number" name="phone_number" value="{{ profile.phone_number }}" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="grade_teaching">Teaching Grade</label>
-            <select id="grade_teaching" name="grade_teaching" required>
-                <option value="1" {% if profile.grade_teaching == 1 %}selected{% endif %}>Grade 1</option>
-                <option value="2" {% if profile.grade_teaching == 2 %}selected{% endif %}>Grade 2</option>
-                <option value="3" {% if profile.grade_teaching == 3 %}selected{% endif %}>Grade 3</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label for="qualification">Qualification</label>
-            <input type="text" id="qualification" name="qualification" value="{{ profile.qualification or '' }}">
-        </div>
-        
-        <div class="form-group">
-            <label for="school">School Name</label>
-            <input type="text" id="school" name="school" value="{{ profile.school or '' }}">
-        </div>
-        
-        {% elif user.role == 'parent' %}
-        <div class="form-group">
-            <label for="id_number">ID Number</label>
-            <input type="text" id="id_number" value="{{ profile.id_number }}" readonly disabled>
-            <div class="help-text">ID number cannot be changed</div>
-        </div>
-        
-        <div class="form-group">
-            <label for="occupation">Occupation</label>
-            <input type="text" id="occupation" name="occupation" value="{{ profile.occupation or '' }}">
-        </div>
-        
-        {% elif user.role == 'learner' %}
-        <div class="form-group">
-            <label for="id_number">ID Number</label>
-            <input type="text" id="id_number" value="{{ profile.id_number }}" readonly disabled>
-            <div class="help-text">ID number cannot be changed</div>
-        </div>
-        
-        <div class="form-group">
-            <label for="grade">Grade</label>
-            <select id="grade" name="grade" required>
-                <option value="1" {% if profile.grade == 1 %}selected{% endif %}>Grade 1</option>
-                <option value="2" {% if profile.grade == 2 %}selected{% endif %}>Grade 2</option>
-                <option value="3" {% if profile.grade == 3 %}selected{% endif %}>Grade 3</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label for="school">School Name</label>
-            <input type="text" id="school" name="school" value="{{ profile.school or '' }}">
-        </div>
-        
-        {% endif %}
-        
-        <!-- Password Change -->
-        <h3 style="color: #667eea; margin: 20px 0 15px;">Change Password (Optional)</h3>
-        
-        <div class="form-group">
-            <label for="new_password">New Password</label>
-            <input type="password" id="new_password" name="new_password" placeholder="Leave blank to keep current password">
-            <div class="help-text">Enter a new password only if you want to change it</div>
-        </div>
-        
-        <div style="text-align: center; margin-top: 30px;">
-            <button type="submit" class="btn-save">Save Changes</button>
-            <a href="{{ url_for('admin_users') }}" class="btn btn-secondary" style="margin-left: 10px;">Cancel</a>
-        </div>
-    </form>
+    </div>
 </div>
 {% endblock %}
